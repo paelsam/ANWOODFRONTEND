@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #ffffff;
+  --color-bg-soft: #c9ffe8;
+  --color-surface: #f5fbf7;
+  --color-surface-2: #eaf5ee;
+  --color-border: #d4e8dc;
+  --color-border-strong: #b8d4c4;
+
+  --color-primary: #425f52;
+  --color-primary-soft: #5a7d6c;
+  --color-primary-strong: #2f4a3d;
+
+  --color-accent: #88694d;
+  --color-accent-soft: #a8866a;
+  --color-accent-strong: #6a4f37;
+
+  --color-text: #1f2e26;
+  --color-text-muted: #5a6b62;
+  --color-text-subtle: #8a9a91;
+
+  --color-danger: #b2452e;
+  --color-success: #2f7d50;
+  --color-info: #3d6b8c;
+
+  --font-display: "Playfair Display", serif;
+  --font-sans: "DM Sans", sans-serif;
+
+  --animate-slide-in: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-text font-sans antialiased min-h-screen;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+  }
+
+  ::selection {
+    background-color: var(--color-primary);
+    color: #ffffff;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs gap-1.5;
+  }
+  .btn-icon {
+    @apply px-2 py-2;
+  }
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-strong shadow-sm;
+  }
+  .btn-secondary {
+    @apply bg-accent text-white hover:bg-accent-strong shadow-sm;
+  }
+  .btn-ghost {
+    @apply bg-transparent text-text-muted border border-border hover:border-primary hover:text-primary;
+  }
+  .btn-danger {
+    @apply bg-danger text-white hover:opacity-90;
+  }
+
+  .form-input {
+    @apply w-full bg-white border border-border rounded-md px-3 py-2 text-sm text-text placeholder:text-text-subtle outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20;
+  }
+  .form-label {
+    @apply block text-xs font-medium text-text-muted mb-1.5 uppercase tracking-wide;
+  }
+  .form-group {
+    @apply mb-4;
+  }
+  .form-error {
+    @apply bg-danger/10 border border-danger/30 text-danger rounded-md px-3 py-2 text-sm mb-4;
+  }
+
+  .badge {
+    @apply inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide;
+  }
+  .badge-success {
+    @apply bg-success/15 text-success;
+  }
+  .badge-warning {
+    @apply bg-accent/15 text-accent-strong;
+  }
+  .badge-danger {
+    @apply bg-danger/15 text-danger;
+  }
+  .badge-info {
+    @apply bg-info/15 text-info;
+  }
+}
