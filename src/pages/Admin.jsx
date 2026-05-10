@@ -122,8 +122,8 @@ function UsersTab({ notify }) {
                 setForm((p) => ({ ...p, role_id: e.target.value }))
               }
             >
-              <option value={1}>Cliente</option>
-              <option value={3}>Administrador</option>
+              <option value={3}>Cliente</option>
+              <option value={1}>Administrador</option>
             </select>
           </div>
           <div className="flex justify-end gap-2 mt-4">
@@ -180,10 +180,10 @@ function UsersTab({ notify }) {
                     <span
                       className={
                         "badge " +
-                        (u.role_id === 3 ? "badge-warning" : "badge-info")
+                        (u.role_id === 1 ? "badge-warning" : "badge-info")
                       }
                     >
-                      {u.role_id === 3 ? "admin" : "client"}
+                      {u.role_id === 1 ? "admin" : "client"}
                     </span>
                   </td>
                   <td className="px-4 py-2">
