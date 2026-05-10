@@ -1,4 +1,5 @@
 import Login from "@/pages/Login";
+import Admin from "@/pages/Admin";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Notification from "@/components/layout/Notification";
@@ -29,9 +30,21 @@ export default function App() {
         <Notification notification={notification} />
         <main className="flex-1 w-full">
           {page === "login" && <Login />}
+          {page === "admin" && <Admin />}
           {page === "home" && (
             <div className="p-10 text-center text-text-muted">
               Bienvenido a ANGWOOD
+              {user?.role === "admin" && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setPage("admin")}
+                  >
+                    Panel de Usuarios
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </main>
