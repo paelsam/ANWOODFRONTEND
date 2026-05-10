@@ -13,6 +13,7 @@ export default function Login() {
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState("");
 
   const handleLogin = async () => {
     setError("");
@@ -38,12 +39,14 @@ export default function Login() {
       await authAPI.register({
         username,
         email,
+        phone: phone || undefined,
         full_name: fullName || undefined,
         password,
       });
       setStoredUser({
         username,
         email,
+        phone: fullName || undefined,
         full_name: fullName || undefined,
       });
       notify("¡Cuenta creada! Inicia sesión ahora.");
@@ -103,19 +106,35 @@ export default function Login() {
         </div>
 
         {mode === "register" && (
-          <div className="form-group">
-            <label className="form-label inline-flex items-center gap-1.5">
-              <Mail size={12} />
-              Correo electrónico
-            </label>
-            <input
-              className="form-input"
-              type="email"
-              placeholder="correo@ejemplo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
+          <div>
+            <div className="form-group">
+              <label className="form-label inline-flex items-center gap-1.5">
+                <Mail size={12} />
+                Correo electrónico
+              </label>
+              <input
+                className="form-input"
+                type="email"
+                placeholder="correo@ejemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label inline-flex items-center gap-1.5">
+                <Mail size={12} />
+                Phone
+              </label>
+              <input
+                className="form-input"
+                type="text"
+                placeholder="3152589872"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                autoComplete="phone"
+              />
+            </div>
           </div>
         )}
 
@@ -131,7 +150,9 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handle()}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
           />
         </div>
 
@@ -140,10 +161,7 @@ export default function Login() {
           className="btn btn-primary w-full mt-2"
           onClick={handle}
           disabled={
-            loading ||
-            !username ||
-            !password ||
-            (mode === "register" && !email)
+            loading || !username || !password || (mode === "register" && !email)
           }
         >
           {loading
