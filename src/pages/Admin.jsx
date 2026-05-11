@@ -46,6 +46,8 @@ function DataTableShell({ title, count, action, children }) {
 function UsersTab({ notify }) {
   const [users, setUsers] = useState([]);
   const [modal, setModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     username: "",
     full_name: "",
@@ -53,6 +55,15 @@ function UsersTab({ notify }) {
     phone: "",
     role_id: 1,
     password: "",
+  });
+  const [editForm, setEditForm] = useState({
+    username: "",
+    full_name: "",
+    email: "",
+    phone: "",
+    role_id: 1,
+    password: "",
+    disable: "",
   });
   const [loading, setLoading] = useState(true);
 
@@ -81,9 +92,63 @@ function UsersTab({ notify }) {
         role_id: Number(form.role_id),
         password: form.password,
       };
+
       await usersAPI.create(payload);
       notify("Usuario registrado");
       setModal(false);
+      load();
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+
+  const openEdit = (user) => {
+    setEditingId(user.id);
+    setEditForm({
+      username: user.username || "",
+      full_name: user.full_name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      role_id: user.role_id ?? 1,
+      password: "",
+      disable: user.disabled ? "true" : "false",
+    });
+    setEditModal(true);
+  };
+
+  const updateUser = async () => {
+    try {
+      const payload = {
+        username: editForm.username,
+        full_name: editForm.full_name || null,
+        email: editForm.email,
+        phone: editForm.phone || null,
+        role_id: Number(editForm.role_id),
+        disabled: editForm.disable === "true",
+      };
+      if (editForm.password) {
+        payload.password = editForm.password;
+      }
+      console.log("payload", payload);
+      const res = await usersAPI.update(editingId, payload);
+      console.log("update_res:", res);
+      notify("Usuario actualizado");
+      setEditModal(false);
+      setEditingId(null);
+      load();
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+
+  const removeUser = async (user) => {
+    const confirmed = window.confirm(
+      `Eliminar el usuario ${user.username}? Esta accion no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+    try {
+      await usersAPI.remove(user.id);
+      notify("Usuario eliminado");
       load();
     } catch (err) {
       notify(err.message, "error");
@@ -140,6 +205,71 @@ function UsersTab({ notify }) {
           </div>
         </Modal>
       )}
+      {editModal && (
+        <Modal title="Actualizar Usuario" onClose={() => setEditModal(false)}>
+          {[
+            ["username", "Usuario", "text"],
+            ["full_name", "Nombre completo", "text"],
+            ["email", "Correo electronico", "email"],
+            ["phone", "Telefono", "text"],
+            ["password", "Nueva contrasena (opcional)", "password"],
+          ].map(([f, label, t]) => (
+            <div className="form-group" key={f}>
+              <label className="form-label">{label}</label>
+              <input
+                type={t}
+                className="form-input"
+                value={editForm[f]}
+                onChange={(e) =>
+                  setEditForm((p) => ({ ...p, [f]: e.target.value }))
+                }
+              />
+            </div>
+          ))}
+          <div className="form-group">
+            <label className="form-label">Rol</label>
+            <select
+              className="form-input"
+              value={editForm.role_id}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, role_id: e.target.value }))
+              }
+            >
+              <option value={3}>Cliente</option>
+              <option value={1}>Administrador</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Estado</label>
+            <select
+              className="form-input"
+              value={editForm.disable}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, disable: e.target.value }))
+              }
+            >
+              <option value="false">Activo</option>
+              <option value="true">Inactivo</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setEditModal(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={updateUser}
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </Modal>
+      )}
       <DataTableShell
         title="Usuarios"
         count={users.length}
@@ -165,6 +295,7 @@ function UsersTab({ notify }) {
                 <th className="px-4 py-2 text-left font-semibold">Teléfono</th>
                 <th className="px-4 py-2 text-left font-semibold">Rol</th>
                 <th className="px-4 py-2 text-left font-semibold">Estado</th>
+                <th className="px-4 py-2 text-right font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -196,6 +327,24 @@ function UsersTab({ notify }) {
                       {u.disabled ? "inactivo" : "activo"}
                     </span>
                   </td>
+                  <td className="px-4 py-2">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => openEdit(u)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm text-danger"
+                        onClick={() => removeUser(u)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -209,7 +358,7 @@ function UsersTab({ notify }) {
 export default function Admin() {
   const { user, notify, setPage } = useApp();
 
-  if (!user || user.role !== "admin") {
+  if (!user || user.role === "user") {
     return (
       <div className="text-center py-20 px-6">
         <div className="text-6xl mb-4">🔒</div>
