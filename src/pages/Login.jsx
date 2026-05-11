@@ -20,7 +20,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(username, password);
-      setPage("home");
+      setPage("catalog");
     } catch (err) {
       setError(err.message || "Credenciales incorrectas. Intenta de nuevo.");
     } finally {
