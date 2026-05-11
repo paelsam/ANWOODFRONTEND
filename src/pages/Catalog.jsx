@@ -68,17 +68,21 @@ const enriched = pieces.map((piece) => {
   const wt = piece.tipo_madera || {};
   const med = piece.medida || {};
 
+  const categoryName = typeof wt.categoria === 'object' 
+    ? wt.categoria?.nombre 
+    : wt.categoria;
+
   return {
     id: piece.id,
     woodTypeId: piece.tipo_madera_id,
     woodName: wt.nombre || "?",
-    category: wt.categoria || "",
+    category: categoryName || "",
     emoji: "🪵",
     // El backend usa mm, el front espera metros para mostrar
     largo: piece.largo_mm / 1000, 
     ancho: med.ancho_mm / 1000,
     alto: med.alto_mm / 1000,
-    quantity: piece.stock ?? 0,
+    quantity: Number(piece.stock) || 0,
     price: Number(piece.precio_unitario),
     m3: Number(piece.volumen_m3),
   };
