@@ -146,6 +146,7 @@ export default function Cart() {
                       type="button"
                       className="w-8 h-8 rounded-md bg-white border border-border text-text font-bold hover:border-primary hover:text-primary transition-colors"
                       onClick={() => updateCartQty(item.id, item.qty + 1)}
+                      disabled={item.qty >= item.stock} 
                     >
                       +
                     </button>
