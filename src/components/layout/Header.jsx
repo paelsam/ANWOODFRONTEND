@@ -26,7 +26,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 h-16 px-6 md:px-8 flex items-center justify-between bg-bg-soft/85 backdrop-blur border-b border-border">
       <button
         type="button"
-        onClick={() => setPage("home")}
+        onClick={() => setPage("catalog")}
         className="flex items-center gap-3 cursor-pointer"
       >
         <img

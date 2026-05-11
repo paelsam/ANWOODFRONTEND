@@ -1,3 +1,4 @@
+import Catalog from "@/pages/Catalog";
 import Login from "@/pages/Login";
 import Admin from "@/pages/Admin";
 import Header from "@/components/layout/Header";
@@ -9,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 
 export default function App() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState("catalog");
   const { notification, notify } = useNotification();
   const { user, authLoading, login, logout } = useAuth({ notify });
 
@@ -31,21 +32,24 @@ export default function App() {
         <main className="flex-1 w-full">
           {page === "login" && <Login />}
           {page === "admin" && <Admin />}
-          {page === "home" && (
-            <div className="p-10 text-center text-text-muted">
-              Bienvenido a ANGWOOD
+          {page === "catalog" && (
+            <>
               {user?.role === "admin" && (
-                <div className="mt-4">
+                <div className="bg-primary/5 border-b border-primary/10 px-10 py-3 flex justify-between items-center">
+                  <span className="text-sm font-medium text-primary">
+                    Modo Administrador activo
+                  </span>
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm" 
                     onClick={() => setPage("admin")}
                   >
-                    Panel de Usuarios
+                    Ir al Panel de Usuarios
                   </button>
                 </div>
               )}
-            </div>
+              <Catalog />
+            </>
           )}
         </main>
         <Footer />
