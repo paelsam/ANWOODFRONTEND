@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ShoppingCart, FileText, Phone } from "lucide-react";
+import { Search, ShoppingCart, FileText, Phone, Info } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { inventoryAPI } from "@/services/inventory";
+import ProductDetailsModal from "@/components/catalog/ProductDetailsModal";
 
 const fmt = (n) =>
   new Intl.NumberFormat("es-CO", {
@@ -91,6 +92,7 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -146,6 +148,7 @@ export default function Catalog() {
           measureId: piece.medida?.id || piece.medida_id || null,
           medida_id: piece.medida?.id || piece.medida_id || null,
           woodName: woodType.nombre || woodType.name || "Madera",
+          description: woodType.descripcion || "Descripción no disponible",
           categoryKey: category.key,
           categoryLabel: category.label,
           pricingStrategy: category.strategy,
@@ -425,6 +428,14 @@ export default function Catalog() {
                       </button>
                       <button
                         type="button"
+                        className="btn btn-ghost btn-sm btn-icon border border-border shadow-xs hover:bg-surface-2"
+                        onClick={() => setSelectedItem(item)}
+                        title="Detalles"
+                      >
+                        <Info size={14} className="text-accent" />
+                      </button>
+                      <button
+                        type="button"
                         className="btn btn-ghost btn-sm btn-icon"
                         onClick={() => setPage("quotation")}
                         title="Cotizar"
@@ -459,6 +470,12 @@ export default function Catalog() {
           </a>
         </div>
       </section>
+      {selectedItem && (
+        <ProductDetailsModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </>
   );
 }
