@@ -172,7 +172,8 @@ export function useCart({ user, notify }) {
           volumen_m3: piece.volumen_m3 ? Number(piece.volumen_m3) : 0,
           unit_price: price,
           total_price: price * item.cantidad,
-          stock: piece.stock || 0,
+          stock: piece.cantidad || 0,          
+          stockDisponible: piece.stock || 0, 
           estado: piece.estado,
           added_at: item.added_at,
         };
