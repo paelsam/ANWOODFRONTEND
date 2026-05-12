@@ -1,4 +1,4 @@
-import { LogIn, LogOut, User } from "lucide-react";
+import { LayoutDashboard, LogIn, LogOut, ShoppingCart, User } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import logo from "@/assets/logo.png";
 
@@ -19,14 +19,16 @@ function NavButton({ active, onClick, children }) {
 }
 
 export default function Header() {
-  const { page, setPage, user, logout } = useApp();
+  const { page, setPage, user, logout, cart } = useApp();
   const displayName = user?.full_name || user?.username || "";
+  
+  const totalQty = cart?.reduce((sum, item) => sum + (item.qty || item.cantidad || 0), 0) || 0;
 
   return (
     <header className="sticky top-0 z-50 h-16 px-6 md:px-8 flex items-center justify-between bg-bg-soft/85 backdrop-blur border-b border-border">
       <button
         type="button"
-        onClick={() => setPage("home")}
+        onClick={() => setPage("catalog")}
         className="flex items-center gap-3 cursor-pointer"
       >
         <img
@@ -44,9 +46,22 @@ export default function Header() {
         </div>
       </button>
 
-      <div className="flex-1" aria-hidden />
-
-      <div>
+      <div className="flex items-center gap-2">
+        {user?.role === "admin" && (
+          <NavButton active={page === "admin"} onClick={() => setPage("admin")}>
+            <LayoutDashboard size={16} />
+            <span>Admin</span>
+          </NavButton>
+        )}
+        <NavButton active={page === "cart"} onClick={() => setPage("cart")}>
+          <ShoppingCart size={16} />
+          <span>Carrito</span>
+          {totalQty > 0 && (
+            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent text-white text-[10px] font-bold">
+              {totalQty > 99 ? "99+" : totalQty}
+            </span>
+          )}
+        </NavButton>
         {user ? (
           <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-surface-2 border border-border">
             <User size={14} className="text-primary" />

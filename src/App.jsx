@@ -1,18 +1,49 @@
+import Catalog from "@/pages/Catalog";
 import Login from "@/pages/Login";
+import Admin from "@/pages/Admin";
+import Cart from "@/pages/Cart";
+import Quotation from "@/pages/Quotation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Notification from "@/components/layout/Notification";
 import { AppContext } from "@/contexts/AppContext";
 import { useNotification } from "@/hooks/useNotification";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import { useState } from "react";
 
 export default function App() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState("catalog");
   const { notification, notify } = useNotification();
   const { user, authLoading, login, logout } = useAuth({ notify });
+  const {
+    cart,
+    serverCart,
+    addToCart,
+    removeFromCart,
+    updateCartQty,
+    clearCart,
+    getCartItemCount,
+    getCartTotal,
+  } = useCart({ user, notify });
 
-  const ctx = { page, setPage, user, login, logout, notify, authLoading };
+  const ctx = {
+    page,
+    setPage,
+    user,
+    login,
+    logout,
+    notify,
+    authLoading,
+    cart,
+    serverCart,
+    addToCart,
+    removeFromCart,
+    updateCartQty,
+    clearCart,
+    getCartItemCount,
+    getCartTotal,
+  };
 
   if (authLoading) {
     return (
@@ -29,10 +60,11 @@ export default function App() {
         <Notification notification={notification} />
         <main className="flex-1 w-full">
           {page === "login" && <Login />}
-          {page === "home" && (
-            <div className="p-10 text-center text-text-muted">
-              Bienvenido a ANGWOOD
-            </div>
+          {page === "admin" && <Admin />}
+          {page === "cart" && <Cart />}
+          {page === "quotation" && <Quotation />}
+          {page === "catalog" && (
+            <Catalog />
           )}
         </main>
         <Footer />

@@ -64,11 +64,14 @@ export function useAuth({ notify } = {}) {
       setToken(data.access_token);
       const payload = parseJwtPayload(data.access_token);
       const sub = payload?.sub || username;
+      const role = payload?.role || "user";
       const snapshot = getStoredUser() || {};
       const next = {
         ...snapshot,
         username: sub,
+        role: role,
       };
+      console.log("next", next);
       setStoredUser(next);
       setUser(next);
       const display = next.full_name || next.username || sub;
