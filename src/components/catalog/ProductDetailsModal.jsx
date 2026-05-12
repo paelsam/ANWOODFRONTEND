@@ -110,7 +110,7 @@ export default function ProductDetailsModal({ item, onClose }) {
                 <div>
                   <p className="text-[10px] uppercase font-bold text-text-subtle leading-none mb-1">Cobro por</p>
                   <p className="text-sm font-bold text-text capitalize">
-                    {pricingStrategy.replace('_', ' ')}
+                    {pricingStrategy.replace(/_/g, " ")}
                   </p>
                 </div>
               </div>
