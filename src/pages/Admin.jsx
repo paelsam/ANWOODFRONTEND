@@ -84,7 +84,7 @@ export default function Admin() {
             contrato actual del backend.
           </p>
         </div>
-        <div className="flex flex-wrap gap-1 bg-surface border border-border rounded-full p-1">
+        <div className="flex flex-wrap gap-1 bg-surface border border-border rounded-full p-3">
           {tabs.map((item) => (
             <button
               type="button"

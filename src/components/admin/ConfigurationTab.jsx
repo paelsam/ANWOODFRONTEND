@@ -193,7 +193,7 @@ export default function ConfigurationTab({ notify }) {
                   <td className="px-4 py-2">{c.valor}</td>
                   <td className="px-4 py-2 text-text-subtle">{c.descripcion || "—"}</td>
                   <td className="px-4 py-2">{c.updated_at ? new Date(c.updated_at).toLocaleString() : "—"}</td>
-                  <td className="px-4 py-2">{c.updated_by_id ?? "—"}</td>
+                  <td className="px-4 py-2">{c.updated_by_nombre ?? "—"}</td>
                   <td className="px-4 py-2">
                     <div className="flex justify-end gap-2">
                       <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(c)}>
