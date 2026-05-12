@@ -1,4 +1,4 @@
-import { LogIn, LogOut, User, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, LogIn, LogOut, ShoppingCart, User } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import logo from "@/assets/logo.png";
 
@@ -47,6 +47,12 @@ export default function Header() {
       </button>
 
       <div className="flex items-center gap-2">
+        {user?.role === "admin" && (
+          <NavButton active={page === "admin"} onClick={() => setPage("admin")}>
+            <LayoutDashboard size={16} />
+            <span>Admin</span>
+          </NavButton>
+        )}
         <NavButton active={page === "cart"} onClick={() => setPage("cart")}>
           <ShoppingCart size={16} />
           <span>Carrito</span>

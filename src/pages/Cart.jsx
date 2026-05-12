@@ -9,31 +9,25 @@ const fmt = (n) =>
   }).format(n);
 
 export default function Cart() {
-  const { user, setPage, notify, setQuotationItems, cart, removeFromCart, updateCartQty, clearCart, getCartTotal, getCartItemCount } = useApp();
+  const {
+    user,
+    setPage,
+    notify,
+    cart,
+    removeFromCart,
+    updateCartQty,
+    clearCart,
+    getCartTotal,
+    getCartItemCount,
+  } = useApp();
 
   const subtotal = getCartTotal();
   const transport = subtotal > 0 ? 85000 : 0;
   const total = subtotal + transport;
 
   const handleGenerateQuotation = () => {
-    const itemsForQuotation = cart.map(item => ({
-      id: item.pieceId,
-      cartItemId: item.id,
-      woodTypeId: item.pieceId,
-      woodName: item.woodName,
-      largo: item.largo_m,
-      ancho: item.ancho_m,
-      alto: item.alto_m,
-      qty: item.qty,
-      precio_unitario: item.price,
-      subtotal: item.total_price,
-      volumen_m3: item.volumen_m3,
-      stock: item.stock,
-    }));
-
-    setQuotationItems(itemsForQuotation);
     setPage("quotation");
-    notify(`${cart.length} productos enviados a cotización`, "success");
+    notify("Usaremos los productos del carrito como base de la cotización", "success");
   };
 
   const handleClearCart = () => {
@@ -103,7 +97,7 @@ export default function Cart() {
               className="bg-white border border-border rounded-xl p-4 transition hover:shadow-sm"
             >
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-bg-soft to-surface rounded-lg flex items-center justify-center text-3xl">
+                <div className="shrink-0 w-16 h-16 bg-linear-to-br from-bg-soft to-surface rounded-lg flex items-center justify-center text-3xl">
                   {item.emoji || "🪵"}
                 </div>
 
@@ -112,9 +106,12 @@ export default function Cart() {
                     {item.woodName || "Madera"}
                   </div>
                   <div className="text-xs text-text-muted space-y-0.5">
-                    {item.largo_m > 0 && item.ancho_m > 0 && item.alto_m > 0 && (
+                    {item.largo_m > 0 &&
+                      item.ancho_in > 0 &&
+                      item.alto_in > 0 && (
                       <div>
-                        📏 {item.largo_m.toFixed(2)}m × {item.ancho_m.toFixed(2)}m × {item.alto_m.toFixed(2)}m
+                        📏 {item.largo_m.toFixed(2)}m × {item.ancho_in.toFixed(1)}" ×{" "}
+                        {item.alto_in.toFixed(1)}"
                       </div>
                     )}
                     {item.volumen_m3 > 0 && (
@@ -122,7 +119,9 @@ export default function Cart() {
                     )}
                     <div>💰 {fmt(item.price)} c/u</div>
                     {item.stock !== undefined && (
-                      <div className={`text-xs ${item.stock < 10 ? "text-danger" : "text-text-subtle"}`}>
+                      <div
+                        className={`text-xs ${item.stock < 10 ? "text-danger" : "text-text-subtle"}`}
+                      >
                         Stock: {item.stock} unidades
                       </div>
                     )}
@@ -146,7 +145,7 @@ export default function Cart() {
                       type="button"
                       className="w-8 h-8 rounded-md bg-white border border-border text-text font-bold hover:border-primary hover:text-primary transition-colors"
                       onClick={() => updateCartQty(item.id, item.qty + 1)}
-                      disabled={item.qty >= item.stock} 
+                      disabled={item.qty >= item.stock}
                     >
                       +
                     </button>
