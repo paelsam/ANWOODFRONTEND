@@ -7,6 +7,7 @@ import InventoryTab from "@/components/admin/InventoryTab";
 import QuotationsTab from "@/components/admin/QuotationsTab";
 import UsersTab from "@/components/admin/UsersTab";
 import WoodTypesTab from "@/components/admin/WoodTypesTab";
+import ConfigurationTab from "@/components/admin/ConfigurationTab";
 
 export default function Admin() {
   const { user, notify, setPage } = useApp();
@@ -68,6 +69,7 @@ export default function Admin() {
     { id: "quotations", label: "Cotizaciones" },
     { id: "clients", label: "Clientes" },
     { id: "users", label: "Usuarios" },
+    { id: "configuration", label: "Configuración" },
   ];
 
   return (
@@ -132,6 +134,7 @@ export default function Admin() {
           {tab === "quotations" && <QuotationsTab notify={notify} />}
           {tab === "clients" && <ClientsTab notify={notify} />}
           {tab === "users" && <UsersTab notify={notify} />}
+          {tab === "configuration" && <ConfigurationTab notify={notify} />}
         </>
       )}
     </div>
