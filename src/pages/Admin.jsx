@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { inventoryAPI } from "@/services/inventory";
+import CategoriesTab from "@/components/admin/CategoriesTab";
 import ClientsTab from "@/components/admin/ClientsTab";
 import InventoryTab from "@/components/admin/InventoryTab";
 import QuotationsTab from "@/components/admin/QuotationsTab";
@@ -62,6 +63,7 @@ export default function Admin() {
 
   const tabs = [
     { id: "inventory", label: "Inventario" },
+    { id: "categories", label: "Categorias" },
     { id: "woodtypes", label: "Tipos de madera" },
     { id: "quotations", label: "Cotizaciones" },
     { id: "clients", label: "Clientes" },
@@ -110,6 +112,13 @@ export default function Admin() {
               notify={notify}
               woodTypes={woodTypes}
               measures={measures}
+            />
+          )}
+          {tab === "categories" && (
+            <CategoriesTab
+              notify={notify}
+              categories={categories}
+              reloadWoodData={reloadWoodData}
             />
           )}
           {tab === "woodtypes" && (
