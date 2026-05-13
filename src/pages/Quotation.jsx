@@ -138,7 +138,7 @@ function buildQuotationPayload({ clientId, details, form }, strict = false) {
 }
 
 export default function Quotation() {
-  const { user, cart, notify, setPage } = useApp();
+  const { user, cart, notify, setPage, clearCart } = useApp();
   const [clients, setClients] = useState([]);
   const [woodTypes, setWoodTypes] = useState([]);
   const [measures, setMeasures] = useState([]);
@@ -171,9 +171,7 @@ export default function Quotation() {
       }
 
       if (!canQuote) {
-        setAccessError(
-          "Tu usuario no tiene acceso al módulo de cotizaciones del backend actual.",
-        );
+        setAccessError("No tienes permisos para crear cotizaciones. Contacta al administrador.");
         setLoading(false);
         return;
       }
@@ -296,6 +294,7 @@ export default function Quotation() {
       );
       setSaving(true);
       const created = await quotationsAPI.create(payload);
+      await clearCart();
       notify(`Cotización #${created.id} creada correctamente`, "success");
       setPage(user?.role === "admin" ? "admin" : "catalog");
     } catch (err) {

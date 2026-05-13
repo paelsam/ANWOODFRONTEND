@@ -233,6 +233,7 @@ export function useCart({ user, notify }) {
   return {
     cart,
     serverCart,
+    refreshCart: refreshServerCart,
     addToCart,
     removeFromCart,
     updateCartQty,

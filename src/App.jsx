@@ -23,6 +23,7 @@ export default function App() {
     removeFromCart,
     updateCartQty,
     clearCart,
+    refreshCart,
     getCartItemCount,
     getCartTotal,
   } = useCart({ user, notify });
@@ -41,6 +42,7 @@ export default function App() {
     removeFromCart,
     updateCartQty,
     clearCart,
+    refreshCart,
     getCartItemCount,
     getCartTotal,
   };
