@@ -1,369 +1,52 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, X, Lock } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import { usersAPI } from "@/services/users";
+import { inventoryAPI } from "@/services/inventory";
+import CategoriesTab from "@/components/admin/CategoriesTab";
+import ClientsTab from "@/components/admin/ClientsTab";
+import InventoryTab from "@/components/admin/InventoryTab";
+import QuotationsTab from "@/components/admin/QuotationsTab";
+import UsersTab from "@/components/admin/UsersTab";
+import WoodTypesTab from "@/components/admin/WoodTypesTab";
+import ConfigurationTab from "@/components/admin/ConfigurationTab";
 
-function Modal({ title, onClose, children }) {
-  return (
-    <div
-      className="fixed inset-0 z-[1000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white border border-border rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="font-display font-bold text-xl text-text">{title}</h2>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm btn-icon"
-            onClick={onClose}
-          >
-            <X size={16} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
+export default function Admin() {
+  const { user, notify, setPage } = useApp();
+  const [tab, setTab] = useState("inventory");
+  const [woodTypes, setWoodTypes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [measures, setMeasures] = useState([]);
+  const [supportLoading, setSupportLoading] = useState(true);
 
-function DataTableShell({ title, count, action, children }) {
-  return (
-    <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
-      <div className="flex flex-wrap justify-between items-center gap-3 px-5 py-4 border-b border-border bg-surface-2">
-        <span className="font-display font-bold text-text">
-          {title} ({count})
-        </span>
-        {action}
-      </div>
-      <div className="overflow-x-auto">{children}</div>
-    </div>
-  );
-}
-
-function UsersTab({ notify }) {
-  const [users, setUsers] = useState([]);
-  const [modal, setModal] = useState(false);
-  const [editModal, setEditModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({
-    username: "",
-    full_name: "",
-    email: "",
-    phone: "",
-    role_id: 1,
-    password: "",
-  });
-  const [editForm, setEditForm] = useState({
-    username: "",
-    full_name: "",
-    email: "",
-    phone: "",
-    role_id: 1,
-    password: "",
-    disable: "",
-  });
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
+  const reloadWoodData = useCallback(async () => {
+    setSupportLoading(true);
     try {
-      setUsers(await usersAPI.list());
+      const [types, categoryList, measureList] = await Promise.all([
+        inventoryAPI.listWoodTypes(),
+        inventoryAPI.listCategories(),
+        inventoryAPI.listMeasures(),
+      ]);
+      setWoodTypes(types);
+      setCategories(categoryList);
+      setMeasures(measureList);
     } catch (err) {
       notify(err.message, "error");
     } finally {
-      setLoading(false);
+      setSupportLoading(false);
     }
   }, [notify]);
 
   useEffect(() => {
-    load();
-  }, [load]);
-
-  const save = async () => {
-    try {
-      const payload = {
-        username: form.username,
-        full_name: form.full_name || null,
-        email: form.email,
-        phone: form.phone || null,
-        role_id: Number(form.role_id),
-        password: form.password,
-      };
-
-      await usersAPI.create(payload);
-      notify("Usuario registrado");
-      setModal(false);
-      load();
-    } catch (err) {
-      notify(err.message, "error");
+    if (user?.role === "admin") {
+      reloadWoodData();
     }
-  };
+  }, [reloadWoodData, user]);
 
-  const openEdit = (user) => {
-    setEditingId(user.id);
-    setEditForm({
-      username: user.username || "",
-      full_name: user.full_name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      role_id: user.role_id ?? 1,
-      password: "",
-      disable: user.disabled ? "true" : "false",
-    });
-    setEditModal(true);
-  };
-
-  const updateUser = async () => {
-    try {
-      const payload = {
-        username: editForm.username,
-        full_name: editForm.full_name || null,
-        email: editForm.email,
-        phone: editForm.phone || null,
-        role_id: Number(editForm.role_id),
-        disabled: editForm.disable === "true",
-      };
-      if (editForm.password) {
-        payload.password = editForm.password;
-      }
-      console.log("payload", payload);
-      const res = await usersAPI.update(editingId, payload);
-      console.log("update_res:", res);
-      notify("Usuario actualizado");
-      setEditModal(false);
-      setEditingId(null);
-      load();
-    } catch (err) {
-      notify(err.message, "error");
-    }
-  };
-
-  const removeUser = async (user) => {
-    const confirmed = window.confirm(
-      `Eliminar el usuario ${user.username}? Esta accion no se puede deshacer.`,
-    );
-    if (!confirmed) return;
-    try {
-      await usersAPI.remove(user.id);
-      notify("Usuario eliminado");
-      load();
-    } catch (err) {
-      notify(err.message, "error");
-    }
-  };
-
-  return (
-    <>
-      {modal && (
-        <Modal title="Nuevo Usuario" onClose={() => setModal(false)}>
-          {[
-            ["username", "Usuario", "text"],
-            ["full_name", "Nombre completo", "text"],
-            ["email", "Correo electrónico", "email"],
-            ["phone", "Teléfono", "text"],
-            ["password", "Contraseña", "password"],
-          ].map(([f, label, t]) => (
-            <div className="form-group" key={f}>
-              <label className="form-label">{label}</label>
-              <input
-                type={t}
-                className="form-input"
-                value={form[f]}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, [f]: e.target.value }))
-                }
-              />
-            </div>
-          ))}
-          <div className="form-group">
-            <label className="form-label">Rol</label>
-            <select
-              className="form-input"
-              value={form.role_id}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, role_id: e.target.value }))
-              }
-            >
-              <option value={3}>Cliente</option>
-              <option value={1}>Administrador</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setModal(false)}
-            >
-              Cancelar
-            </button>
-            <button type="button" className="btn btn-primary" onClick={save}>
-              Crear Usuario
-            </button>
-          </div>
-        </Modal>
-      )}
-      {editModal && (
-        <Modal title="Actualizar Usuario" onClose={() => setEditModal(false)}>
-          {[
-            ["username", "Usuario", "text"],
-            ["full_name", "Nombre completo", "text"],
-            ["email", "Correo electronico", "email"],
-            ["phone", "Telefono", "text"],
-            ["password", "Nueva contrasena (opcional)", "password"],
-          ].map(([f, label, t]) => (
-            <div className="form-group" key={f}>
-              <label className="form-label">{label}</label>
-              <input
-                type={t}
-                className="form-input"
-                value={editForm[f]}
-                onChange={(e) =>
-                  setEditForm((p) => ({ ...p, [f]: e.target.value }))
-                }
-              />
-            </div>
-          ))}
-          <div className="form-group">
-            <label className="form-label">Rol</label>
-            <select
-              className="form-input"
-              value={editForm.role_id}
-              onChange={(e) =>
-                setEditForm((p) => ({ ...p, role_id: e.target.value }))
-              }
-            >
-              <option value={3}>Cliente</option>
-              <option value={1}>Administrador</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Estado</label>
-            <select
-              className="form-input"
-              value={editForm.disable}
-              onChange={(e) =>
-                setEditForm((p) => ({ ...p, disable: e.target.value }))
-              }
-            >
-              <option value="false">Activo</option>
-              <option value="true">Inactivo</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setEditModal(false)}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={updateUser}
-            >
-              Guardar Cambios
-            </button>
-          </div>
-        </Modal>
-      )}
-      <DataTableShell
-        title="Usuarios"
-        count={users.length}
-        action={
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => setModal(true)}
-          >
-            <Plus size={14} /> Nuevo Usuario
-          </button>
-        }
-      >
-        {loading ? (
-          <div className="p-8 text-text-subtle">Cargando…</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-surface-2 text-text-muted text-xs uppercase tracking-wide">
-              <tr>
-                <th className="px-4 py-2 text-left font-semibold">Usuario</th>
-                <th className="px-4 py-2 text-left font-semibold">Nombre</th>
-                <th className="px-4 py-2 text-left font-semibold">Email</th>
-                <th className="px-4 py-2 text-left font-semibold">Teléfono</th>
-                <th className="px-4 py-2 text-left font-semibold">Rol</th>
-                <th className="px-4 py-2 text-left font-semibold">Estado</th>
-                <th className="px-4 py-2 text-right font-semibold">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-surface-2/50">
-                  <td className="px-4 py-2 font-medium">{u.username}</td>
-                  <td className="px-4 py-2">{u.full_name || "—"}</td>
-                  <td className="px-4 py-2 text-text-subtle">{u.email}</td>
-                  <td className="px-4 py-2 text-text-subtle">
-                    {u.phone || "—"}
-                  </td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={
-                        "badge " +
-                        (u.role_id === 1 ? "badge-warning" : "badge-info")
-                      }
-                    >
-                      {u.role_id === 1 ? "admin" : "client"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={
-                        "badge " +
-                        (u.disabled ? "badge-danger" : "badge-success")
-                      }
-                    >
-                      {u.disabled ? "inactivo" : "activo"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => openEdit(u)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm text-danger"
-                        onClick={() => removeUser(u)}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </DataTableShell>
-    </>
-  );
-}
-
-export default function Admin() {
-  const { user, notify, setPage } = useApp();
-
-  if (!user || user.role === "user") {
+  if (!user || user.role !== "admin") {
     return (
       <div className="text-center py-20 px-6">
         <div className="text-6xl mb-4">🔒</div>
         <h2 className="font-display font-bold text-3xl text-text mb-3">
-          Acceso Restringido
+          Acceso restringido
         </h2>
         <p className="text-text-muted mb-6">
           Debes iniciar sesión como administrador.
@@ -373,20 +56,87 @@ export default function Admin() {
           className="btn btn-primary"
           onClick={() => setPage("login")}
         >
-          Iniciar Sesión
+          Iniciar sesión
         </button>
       </div>
     );
   }
 
+  const tabs = [
+    { id: "inventory", label: "Inventario" },
+    { id: "categories", label: "Categorias" },
+    { id: "woodtypes", label: "Tipos de madera" },
+    { id: "quotations", label: "Cotizaciones" },
+    { id: "clients", label: "Clientes" },
+    { id: "users", label: "Usuarios" },
+    { id: "configuration", label: "Configuración" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-8 py-12">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-        <h1 className="font-display font-black text-3xl md:text-4xl text-primary">
-          Panel <span className="text-accent">de Usuarios</span>
-        </h1>
+        <div>
+          <h1 className="font-display font-black text-3xl md:text-4xl text-primary">
+            Panel <span className="text-accent">Administrativo</span>
+          </h1>
+          <p className="text-sm text-text-muted mt-2">
+            Gestión de inventario, clientes, cotizaciones y usuarios con el
+            contrato actual del backend.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1 bg-surface border border-border rounded-full p-3">
+          {tabs.map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              className={
+                "px-4 py-1.5 rounded-full text-sm font-medium transition cursor-pointer " +
+                (tab === item.id
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-text-muted hover:text-primary")
+              }
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <UsersTab notify={notify} />
+
+      {supportLoading ? (
+        <div className="bg-white border border-border rounded-2xl p-8 text-text-subtle">
+          Cargando catálogos del panel…
+        </div>
+      ) : (
+        <>
+          {tab === "inventory" && (
+            <InventoryTab
+              notify={notify}
+              woodTypes={woodTypes}
+              measures={measures}
+            />
+          )}
+          {tab === "categories" && (
+            <CategoriesTab
+              notify={notify}
+              categories={categories}
+              reloadWoodData={reloadWoodData}
+            />
+          )}
+          {tab === "woodtypes" && (
+            <WoodTypesTab
+              notify={notify}
+              woodTypes={woodTypes}
+              categories={categories}
+              reloadWoodData={reloadWoodData}
+            />
+          )}
+          {tab === "quotations" && <QuotationsTab notify={notify} />}
+          {tab === "clients" && <ClientsTab notify={notify} />}
+          {tab === "users" && <UsersTab notify={notify} />}
+          {tab === "configuration" && <ConfigurationTab notify={notify} />}
+        </>
+      )}
     </div>
   );
 }

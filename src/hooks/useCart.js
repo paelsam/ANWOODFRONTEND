@@ -12,26 +12,28 @@ export function useCart({ user, notify }) {
     try {
       const summary = await cartAPI.getCart();
       setServerCart(summary);
-      
+
       if (summary.items && summary.items.length > 0) {
-        const woodPieceIds = [...new Set(summary.items.map(item => item.wood_piece_id))];
-        
-        const piecesPromises = woodPieceIds.map(id => 
-          inventoryAPI.getPiece(id).catch(err => {
+        const woodPieceIds = [
+          ...new Set(summary.items.map((item) => item.wood_piece_id)),
+        ];
+
+        const piecesPromises = woodPieceIds.map((id) =>
+          inventoryAPI.getPiece(id).catch((err) => {
             console.error(`Error loading piece ${id}:`, err);
             return null;
-          })
+          }),
         );
-        
+
         const pieces = await Promise.all(piecesPromises);
-        
+
         const piecesMap = {};
         pieces.forEach((piece, index) => {
           if (piece) {
             piecesMap[woodPieceIds[index]] = piece;
           }
         });
-        
+
         setPiecesDetails(piecesMap);
       } else {
         setPiecesDetails({});
@@ -52,7 +54,9 @@ export function useCart({ user, notify }) {
         try {
           await cartAPI.addItem(item.id, 1);
           await refreshServerCart();
-          notify?.((item.woodName || item.nombre || item.name) + " agregado al carrito");
+          notify?.(
+            (item.woodName || item.nombre || item.name) + " agregado al carrito",
+          );
         } catch (err) {
           notify?.(err.message || "Error al agregar al carrito", "error");
         }
@@ -94,7 +98,7 @@ export function useCart({ user, notify }) {
         removeFromCart(item_id);
         return;
       }
-      
+
       if (user && serverCart) {
         try {
           await cartAPI.updateItem(item_id, qty);
@@ -105,9 +109,8 @@ export function useCart({ user, notify }) {
         }
         return;
       }
-      
       setLocalCart((prev) =>
-        prev.map((c) => (c.id === item_id ? { ...c, qty } : c))
+        prev.map((c) => (c.id === item_id ? { ...c, qty } : c)),
       );
     },
     [user, serverCart, removeFromCart, refreshServerCart, notify],
@@ -115,60 +118,65 @@ export function useCart({ user, notify }) {
 
   const cart = useMemo(() => {
     if (user && serverCart) {
-      // Ordenar por ID para mantener consistencia
-      const sortedItems = [...(serverCart.items || [])].sort((a, b) => a.id - b.id);
-      
+      const sortedItems = [...(serverCart.items || [])].sort(
+        (a, b) => a.id - b.id,
+      );
+
       return sortedItems.map((item) => {
         const piece = piecesDetails[item.wood_piece_id];
-        
+
         if (!piece) {
           return {
-            id: item.id, 
+            id: item.id,
             pieceId: item.wood_piece_id,
+            tipo_madera_id: null,
+            medida_id: null,
             woodName: "Cargando...",
             emoji: "🪵",
             price: 0,
             qty: item.cantidad,
             quantity: item.cantidad,
             largo_m: 0,
-            ancho_m: 0,
-            alto_m: 0,
+            ancho_in: 0,
+            alto_in: 0,
             volumen_m3: 0,
             unit_price: 0,
             total_price: 0,
           };
         }
-        
-        const largo_m = piece.largo_mm ? Number(piece.largo_mm) / 1000 : 0;
-        const ancho_m = piece.medida?.ancho_mm ? Number(piece.medida.ancho_mm) / 1000 : 0;
-        const alto_m = piece.medida?.alto_mm ? Number(piece.medida.alto_mm) / 1000 : 0;
-        
+
+        const largo_m = Number(piece.largo_m ?? 0) || 0;
+        const ancho_in = Number(piece.medida?.ancho_in ?? 0) || 0;
+        const alto_in = Number(piece.medida?.alto_in ?? 0) || 0;
+
         const price = piece.precio_unitario ? Number(piece.precio_unitario) : 0;
-        
+
         const woodName = piece.tipo_madera?.nombre || "Madera";
-        
+
         const getWoodEmoji = (nombre) => {
           const emojis = {
-            "Cedro": "🌲",
-            "Roble": "🌳",
-            "Pino": "🌲",
-            "Caoba": "🪵",
-            "Guayacán": "🌴",
+            Cedro: "🌲",
+            Roble: "🌳",
+            Pino: "🌲",
+            Caoba: "🪵",
+            Guayacán: "🌴",
           };
           return emojis[nombre] || "🪵";
         };
-        
+
         return {
           id: item.id,
           pieceId: item.wood_piece_id,
-          woodName: woodName,
+          tipo_madera_id: piece.tipo_madera?.id ?? piece.tipo_madera_id ?? null,
+          medida_id: piece.medida?.id ?? piece.medida_id ?? null,
+          woodName,
           emoji: getWoodEmoji(woodName),
-          price: price,
+          price,
           qty: item.cantidad,
           quantity: item.cantidad,
-          largo_m: largo_m,
-          ancho_m: ancho_m,
-          alto_m: alto_m,
+          largo_m,
+          ancho_in,
+          alto_in,
           volumen_m3: piece.volumen_m3 ? Number(piece.volumen_m3) : 0,
           unit_price: price,
           total_price: price * item.cantidad,
@@ -179,7 +187,24 @@ export function useCart({ user, notify }) {
         };
       });
     }
-    return localCart;
+    return localCart.map((item) => {
+      const price = Number(item.price ?? item.unit_price ?? 0) || 0;
+      const qty = Number(item.qty ?? 1) || 1;
+
+      return {
+        ...item,
+        pieceId: item.pieceId ?? item.id,
+        tipo_madera_id: item.tipo_madera_id ?? item.woodTypeId ?? null,
+        medida_id: item.medida_id ?? item.measureId ?? null,
+        price,
+        qty,
+        quantity: qty,
+        total_price: price * qty,
+        ancho_in: Number(item.ancho_in ?? item.ancho ?? 0) || 0,
+        alto_in: Number(item.alto_in ?? item.alto ?? 0) || 0,
+        largo_m: Number(item.largo_m ?? item.largo ?? 0) || 0,
+      };
+    });
   }, [user, serverCart, localCart, piecesDetails]);
 
   const getCartTotal = useCallback(() => {
@@ -205,11 +230,11 @@ export function useCart({ user, notify }) {
     }
   }, [user, serverCart, refreshServerCart, notify]);
 
-  return { 
-    cart, 
-    serverCart, 
-    addToCart, 
-    removeFromCart, 
+  return {
+    cart,
+    serverCart,
+    addToCart,
+    removeFromCart,
     updateCartQty,
     clearCart,
     getCartTotal,
