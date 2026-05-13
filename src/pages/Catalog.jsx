@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, ShoppingCart, FileText, Phone, Info, ArrowRight, Layers, Clock, Star } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { inventoryAPI } from "@/services/inventory";
@@ -89,6 +89,90 @@ const measureMetaFromPiece = (piece, measuresById) => {
 const formatStrategy = (strategy) =>
   strategy ? strategy.replace(/_/g, " ") : "";
 
+function ProductImage({ images, alt, fallbackEmoji = "🪵", intervalMs = 1200 }) {
+  const [index, setIndex] = useState(0);
+  const [failed, setFailed] = useState({});
+  const intervalRef = useRef(null);
+
+  const validImages = useMemo(
+    () => (Array.isArray(images) ? images.filter((url) => !failed[url]) : []),
+    [images, failed],
+  );
+
+  useEffect(() => {
+    if (index > 0 && index >= validImages.length) {
+      setIndex(0);
+    }
+  }, [index, validImages.length]);
+
+  const stopCycling = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const handleEnter = () => {
+    if (validImages.length < 2) return;
+    setIndex((prev) => (prev + 1) % validImages.length);
+    if (validImages.length > 2) {
+      stopCycling();
+      intervalRef.current = setInterval(() => {
+        setIndex((prev) => (prev + 1) % validImages.length);
+      }, intervalMs);
+    }
+  };
+
+  const handleLeave = () => {
+    stopCycling();
+    setIndex(0);
+  };
+
+  useEffect(() => stopCycling, []);
+
+  if (validImages.length === 0) {
+    return <span>{fallbackEmoji}</span>;
+  }
+
+  const currentSrc = validImages[index] || validImages[0];
+
+  return (
+    <div
+      className="absolute inset-0"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
+      {validImages.map((src) => (
+        <img
+          key={src}
+          src={src}
+          alt={alt}
+          loading="lazy"
+          aria-hidden={src !== currentSrc}
+          onError={() => setFailed((prev) => ({ ...prev, [src]: true }))}
+          className={
+            "absolute inset-0 w-full h-full object-cover transition-opacity duration-300 " +
+            (src === currentSrc ? "opacity-100" : "opacity-0")
+          }
+        />
+      ))}
+      {validImages.length > 1 ? (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
+          {validImages.map((src, i) => (
+            <span
+              key={src}
+              className={
+                "w-1.5 h-1.5 rounded-full transition-colors " +
+                (i === index ? "bg-white" : "bg-white/50")
+              }
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CatalogInner() {
   const { addToCart, cart, setPage, notify, user } = useApp();
   const [pieces, setPieces] = useState([]);
@@ -154,9 +238,16 @@ function CatalogInner() {
         const stockBase = Number(piece.stock ?? piece.quantity ?? 0) || 0;
         const inCart = cartQuantityMap.get(piece.id) ?? 0;
         const quantity = Math.max(0, stockBase - inCart);
+        const images = Array.isArray(woodType.imagenes)
+          ? woodType.imagenes.filter(
+              (url) => typeof url === "string" && url.trim() !== "",
+            )
+          : [];
 
         return {
           id: piece.id,
+          images,
+          image: images[0] || null,
           woodTypeId:
             piece.tipo_madera_id || piece.wood_type_id || woodType.id || null,
           tipo_madera_id:
@@ -371,8 +462,13 @@ function CatalogInner() {
                   key={item.id}
                   className="bg-white border border-border rounded-xl overflow-hidden shadow-sm hover:border-primary hover:shadow-md transition flex flex-col"
                 >
-                  <div className="relative h-36 bg-linear-to-br from-bg-soft to-surface flex items-center justify-center text-6xl">
-                    <span>{item.emoji}</span>
+                  <div className="relative h-36 bg-linear-to-br from-bg-soft to-surface flex items-center justify-center text-6xl overflow-hidden">
+                    <ProductImage
+                      images={item.images}
+                      alt={item.woodName}
+                      fallbackEmoji={item.emoji}
+                    />
+
                     <span className="absolute top-3 left-3 bg-primary/90 text-white text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full">
                       {item.categoryLabel}
                     </span>
