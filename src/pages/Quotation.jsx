@@ -159,7 +159,9 @@ export default function Quotation() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [accessError, setAccessError] = useState("");
-  const canQuote = Boolean(user && ["admin", "staff"].includes(user.role));
+  const canQuote = Boolean(
+    user && ["admin", "staff", "user"].includes(user.role),
+  );
 
   useEffect(() => {
     let active = true;
@@ -200,7 +202,9 @@ export default function Quotation() {
 
         if (cart.length > 0) {
           setDetails(
-            cart.map((item) => detailFromCartItem(item, woodTypeList, measureList)),
+            cart.map((item) =>
+              detailFromCartItem(item, woodTypeList, measureList),
+            ),
           );
         } else {
           setDetails([emptyDetail(woodTypeList, measureList)]);
@@ -391,8 +395,8 @@ export default function Quotation() {
             Nueva <span className="text-accent">Cotización</span>
           </h1>
           <p className="text-sm text-text-muted mt-2 max-w-2xl">
-            Selecciona un cliente, arma los detalles del pedido y valida el total
-            con preview en vivo antes de guardar.
+            Selecciona un cliente, arma los detalles del pedido y valida el
+            total con preview en vivo antes de guardar.
           </p>
         </div>
 
@@ -408,7 +412,8 @@ export default function Quotation() {
       {cart.length > 0 && (
         <div className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-sm text-text mb-6">
           Se tomaron <strong>{cart.length}</strong> productos del carrito como
-          base para esta cotización. Puedes ajustar cada detalle antes de guardar.
+          base para esta cotización. Puedes ajustar cada detalle antes de
+          guardar.
         </div>
       )}
 
@@ -509,7 +514,11 @@ export default function Quotation() {
                           className="form-input"
                           value={detail.tipo_madera_id}
                           onChange={(e) =>
-                            updateDetail(detail.id, "tipo_madera_id", e.target.value)
+                            updateDetail(
+                              detail.id,
+                              "tipo_madera_id",
+                              e.target.value,
+                            )
                           }
                         >
                           <option value="">Selecciona</option>
@@ -545,14 +554,20 @@ export default function Quotation() {
                           className="form-input"
                           value={detail.wood_piece_id}
                           onChange={(e) =>
-                            updateDetail(detail.id, "wood_piece_id", e.target.value)
+                            updateDetail(
+                              detail.id,
+                              "wood_piece_id",
+                              e.target.value,
+                            )
                           }
                         >
                           <option value="">Sin pieza específica</option>
                           {filteredPieces.map((piece) => (
                             <option key={piece.id} value={piece.id}>
-                              #{piece.id} · {piece.tipo_madera?.nombre || "Madera"} ·{" "}
-                              {measureLabel(piece.medida)} · {fmtNumber(piece.largo_m)}m
+                              #{piece.id} ·{" "}
+                              {piece.tipo_madera?.nombre || "Madera"} ·{" "}
+                              {measureLabel(piece.medida)} ·{" "}
+                              {fmtNumber(piece.largo_m)}m
                             </option>
                           ))}
                         </select>
@@ -652,7 +667,10 @@ export default function Quotation() {
                   className="form-input min-h-28"
                   value={form.notas}
                   onChange={(e) =>
-                    setForm((current) => ({ ...current, notas: e.target.value }))
+                    setForm((current) => ({
+                      ...current,
+                      notas: e.target.value,
+                    }))
                   }
                   placeholder="Notas visibles para la cotización"
                 />
@@ -691,7 +709,9 @@ export default function Quotation() {
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-text-muted">Descargue terrestre</span>
-                    <span>{fmtCurrency(preview.costo_descargue_terrestre)}</span>
+                    <span>
+                      {fmtCurrency(preview.costo_descargue_terrestre)}
+                    </span>
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-text-muted">Cargue marítimo</span>
@@ -707,19 +727,25 @@ export default function Quotation() {
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-text-muted">EPA aplicado</span>
-                    <span>{fmtCurrency(preview.precio_epa_por_metro_usado)}</span>
+                    <span>
+                      {fmtCurrency(preview.precio_epa_por_metro_usado)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="border-t border-border mt-4 pt-4">
                   <div className="flex justify-between items-baseline gap-4">
-                    <span className="font-display font-bold text-lg">Total</span>
+                    <span className="font-display font-bold text-lg">
+                      Total
+                    </span>
                     <span className="font-display font-black text-3xl text-primary">
                       {fmtCurrency(preview.total)}
                     </span>
                   </div>
                   <div className="flex justify-between mt-2 text-sm text-text-muted">
-                    <span>Anticipo ({fmtNumber(preview.porcentaje_anticipo)}%)</span>
+                    <span>
+                      Anticipo ({fmtNumber(preview.porcentaje_anticipo)}%)
+                    </span>
                     <span className="font-semibold text-accent">
                       {fmtCurrency(preview.monto_anticipo)}
                     </span>
@@ -765,13 +791,16 @@ export default function Quotation() {
                 onClick={saveQuotation}
                 disabled={saving || clients.length === 0}
               >
-                <Save size={16} /> {saving ? "Guardando..." : "Guardar cotización"}
+                <Save size={16} />{" "}
+                {saving ? "Guardando..." : "Guardar cotización"}
               </button>
 
               <button
                 type="button"
                 className="btn btn-ghost w-full"
-                onClick={() => setPage(user?.role === "admin" ? "admin" : "catalog")}
+                onClick={() =>
+                  setPage(user?.role === "admin" ? "admin" : "catalog")
+                }
               >
                 Cancelar
               </button>

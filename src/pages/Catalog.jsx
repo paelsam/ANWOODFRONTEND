@@ -85,7 +85,7 @@ const formatStrategy = (strategy) =>
   strategy ? strategy.replace(/_/g, " ") : "";
 
 export default function Catalog() {
-  const { addToCart, setPage, notify } = useApp();
+  const { addToCart, setPage, notify, user } = useApp();
   const [pieces, setPieces] = useState([]);
   const [woodTypes, setWoodTypes] = useState([]);
   const [measures, setMeasures] = useState([]);
@@ -161,7 +161,8 @@ export default function Catalog() {
           ancho_in: measure.widthIn,
           alto_in: measure.heightIn,
           quantity,
-          totalQuantity: Number(piece.cantidad ?? piece.quantity ?? quantity) || 0,
+          totalQuantity:
+            Number(piece.cantidad ?? piece.quantity ?? quantity) || 0,
           price: Number(piece.precio_unitario ?? piece.unit_price ?? 0) || 0,
           m3: Number(piece.volumen_m3 ?? 0) || 0,
           status: piece.estado || "disponible",
@@ -418,8 +419,22 @@ export default function Catalog() {
                       <button
                         type="button"
                         className="btn btn-primary btn-sm flex-1"
-                        disabled={item.quantity === 0 || item.status !== "disponible"}
-                        onClick={() => addToCart(item)}
+                        disabled={
+                          !user ||
+                          item.quantity === 0 ||
+                          item.status !== "disponible"
+                        }
+                        onClick={() => {
+                          if (!user) {
+                            notify(
+                              "Inicia sesion para agregar productos",
+                              "error",
+                            );
+                            setPage("login");
+                            return;
+                          }
+                          addToCart(item);
+                        }}
                       >
                         <ShoppingCart size={14} />
                         {item.quantity === 0 || item.status !== "disponible"
