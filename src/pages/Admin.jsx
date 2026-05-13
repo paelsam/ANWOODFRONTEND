@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { inventoryAPI } from "@/services/inventory";
 import CategoriesTab from "@/components/admin/CategoriesTab";
-import ClientsTab from "@/components/admin/ClientsTab";
 import InventoryTab from "@/components/admin/InventoryTab";
 import QuotationsTab from "@/components/admin/QuotationsTab";
 import UsersTab from "@/components/admin/UsersTab";
@@ -35,13 +34,15 @@ export default function Admin() {
     }
   }, [notify]);
 
+  const canAccess = user?.role === "admin" || user?.role === "staff";
+
   useEffect(() => {
-    if (user?.role === "admin") {
+    if (canAccess) {
       reloadWoodData();
     }
-  }, [reloadWoodData, user]);
+  }, [canAccess, reloadWoodData]);
 
-  if (!user || user.role !== "admin") {
+  if (!user || !canAccess) {
     return (
       <div className="text-center py-20 px-6">
         <div className="text-6xl mb-4">🔒</div>
@@ -49,7 +50,7 @@ export default function Admin() {
           Acceso restringido
         </h2>
         <p className="text-text-muted mb-6">
-          Debes iniciar sesión como administrador.
+          Debes iniciar sesión como administrador o staff.
         </p>
         <button
           type="button"
@@ -67,7 +68,6 @@ export default function Admin() {
     { id: "categories", label: "Categorias" },
     { id: "woodtypes", label: "Tipos de madera" },
     { id: "quotations", label: "Cotizaciones" },
-    { id: "clients", label: "Clientes" },
     { id: "users", label: "Usuarios" },
     { id: "configuration", label: "Configuración" },
   ];
@@ -84,7 +84,7 @@ export default function Admin() {
             contrato actual del backend.
           </p>
         </div>
-        <div className="flex flex-wrap gap-1 bg-surface border border-border rounded-full p-3">
+        <div className="flex flex-wrap gap-1 bg-surface p-5 border border-border rounded-full p-1">
           {tabs.map((item) => (
             <button
               type="button"
@@ -132,7 +132,6 @@ export default function Admin() {
             />
           )}
           {tab === "quotations" && <QuotationsTab notify={notify} />}
-          {tab === "clients" && <ClientsTab notify={notify} />}
           {tab === "users" && <UsersTab notify={notify} />}
           {tab === "configuration" && <ConfigurationTab notify={notify} />}
         </>
