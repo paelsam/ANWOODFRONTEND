@@ -64,23 +64,7 @@ export default function App() {
           {page === "cart" && <Cart />}
           {page === "quotation" && <Quotation />}
           {page === "catalog" && (
-            <>
-              {user?.role === "admin" && (
-                <div className="bg-primary/5 border-b border-primary/10 px-10 py-3 flex justify-between items-center">
-                  <span className="text-sm font-medium text-primary">
-                    Modo administrador activo
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => setPage("admin")}
-                  >
-                    Ir al Panel Administrativo
-                  </button>
-                </div>
-              )}
-              <Catalog />
-            </>
+            <Catalog />
           )}
         </main>
         <Footer />
