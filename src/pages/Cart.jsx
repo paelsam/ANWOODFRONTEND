@@ -119,10 +119,8 @@ export default function Cart() {
                     )}
                     <div>💰 {fmt(item.price)} c/u</div>
                     {item.stock !== undefined && (
-                      <div
-                        className={`text-xs ${item.stock < 10 ? "text-danger" : "text-text-subtle"}`}
-                      >
-                        Stock: {item.stock} unidades
+                      <div className={`text-xs ${item.stock < 10 ? "text-danger" : "text-text-subtle"}`}>
+                        Stock: {item.stockDisponible} unidades
                       </div>
                     )}
                   </div>

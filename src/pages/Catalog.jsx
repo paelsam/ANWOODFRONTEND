@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ShoppingCart, FileText, Phone, Info } from "lucide-react";
+import { Search, ShoppingCart, FileText, Phone, Info, ArrowRight, Layers, Clock, Star } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { inventoryAPI } from "@/services/inventory";
 import ProductDetailsModal from "@/components/catalog/ProductDetailsModal";
+import {
+  PieceComparatorProvider,
+  ComparatorTray,
+  CompareButton,
+} from "@/components/catalog/PieceComparator";
 
 const fmt = (n) =>
   new Intl.NumberFormat("es-CO", {
@@ -84,8 +89,8 @@ const measureMetaFromPiece = (piece, measuresById) => {
 const formatStrategy = (strategy) =>
   strategy ? strategy.replace(/_/g, " ") : "";
 
-export default function Catalog() {
-  const { addToCart, setPage, notify, user } = useApp();
+function CatalogInner() {
+  const { addToCart, cart, setPage, notify, user } = useApp();
   const [pieces, setPieces] = useState([]);
   const [woodTypes, setWoodTypes] = useState([]);
   const [measures, setMeasures] = useState([]);
@@ -125,6 +130,15 @@ export default function Catalog() {
     [woodTypes],
   );
 
+  const cartQuantityMap = useMemo(() => {
+    const map = new Map();
+    cart.forEach((item) => {
+      const id = item.pieceId ?? item.id;
+      map.set(id, (map.get(id) ?? 0) + (item.qty ?? 1));
+    });
+    return map;
+  }, [cart]);
+
   const enriched = useMemo(
     () =>
       pieces.map((piece) => {
@@ -137,7 +151,9 @@ export default function Catalog() {
         const category = categoryMetaFromWoodType(woodType);
         const measure = measureMetaFromPiece(piece, measuresById);
         const largo = Number(piece.largo_m ?? 0) || 0;
-        const quantity = Number(piece.stock ?? piece.quantity ?? 0) || 0;
+        const stockBase = Number(piece.stock ?? piece.quantity ?? 0) || 0;
+        const inCart = cartQuantityMap.get(piece.id) ?? 0;
+        const quantity = Math.max(0, stockBase - inCart);
 
         return {
           id: piece.id,
@@ -161,14 +177,13 @@ export default function Catalog() {
           ancho_in: measure.widthIn,
           alto_in: measure.heightIn,
           quantity,
-          totalQuantity:
-            Number(piece.cantidad ?? piece.quantity ?? quantity) || 0,
+          totalQuantity: Number(piece.cantidad ?? piece.quantity ?? stockBase) || 0,
           price: Number(piece.precio_unitario ?? piece.unit_price ?? 0) || 0,
           m3: Number(piece.volumen_m3 ?? 0) || 0,
           status: piece.estado || "disponible",
         };
       }),
-    [measuresById, pieces, woodTypesById],
+    [measuresById, pieces, woodTypesById, cartQuantityMap],
   );
 
   const filterOptions = useMemo(() => {
@@ -349,6 +364,8 @@ export default function Catalog() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((item) => {
               const badge = stockBadge(item.quantity, item.status);
+              const isUnavailable = item.quantity === 0 || item.status !== "disponible";
+              
               return (
                 <div
                   key={item.id}
@@ -437,10 +454,9 @@ export default function Catalog() {
                         }}
                       >
                         <ShoppingCart size={14} />
-                        {item.quantity === 0 || item.status !== "disponible"
-                          ? "No disponible"
-                          : "Agregar"}
+                        {isUnavailable ? "No disponible" : "Agregar"}
                       </button>
+                      <CompareButton item={item} />
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm btn-icon border border-border shadow-xs hover:bg-surface-2"
@@ -485,12 +501,23 @@ export default function Catalog() {
           </a>
         </div>
       </section>
+      
       {selectedItem && (
         <ProductDetailsModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
         />
       )}
+      
+      <ComparatorTray addToCartFn={addToCart} />
     </>
+  );
+}
+
+export default function Catalog() {
+  return (
+    <PieceComparatorProvider>
+      <CatalogInner />
+    </PieceComparatorProvider>
   );
 }

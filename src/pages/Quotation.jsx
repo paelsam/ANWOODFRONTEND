@@ -25,7 +25,13 @@ function buildQuotationPayload({ form }, strict = false) {
 }
 
 export default function Quotation() {
-  const { user, cart, notify, setPage } = useApp();
+  const { user, cart, notify, setPage, clearCart } = useApp();
+  const [clients, setClients] = useState([]);
+  const [woodTypes, setWoodTypes] = useState([]);
+  const [measures, setMeasures] = useState([]);
+  const [pieces, setPieces] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [details, setDetails] = useState([]);
   const [cotizationInfo, setCotizationInfo] = useState({});
   const [quotationDetails, setQuotationDetails] = useState([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -53,9 +59,7 @@ export default function Quotation() {
       }
 
       if (!canQuote) {
-        setAccessError(
-          "Tu usuario no tiene acceso al módulo de cotizaciones del backend actual.",
-        );
+        setAccessError("No tienes permisos para crear cotizaciones. Contacta al administrador.");
         setLoading(false);
         return;
       }
@@ -80,6 +84,7 @@ export default function Quotation() {
       setDetailsError("");
       setQuotationDetails([]);
       const created = await quotationsAPI.create(payload);
+      await clearCart();
       setCotizationInfo(created);
       const targetCotizationId = created?.id;
       if (targetCotizationId) {

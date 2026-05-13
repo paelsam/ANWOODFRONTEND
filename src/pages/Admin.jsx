@@ -7,15 +7,17 @@ import QuotationsTab from "@/components/admin/QuotationsTab";
 import UsersTab from "@/components/admin/UsersTab";
 import WoodTypesTab from "@/components/admin/WoodTypesTab";
 import ConfigurationTab from "@/components/admin/ConfigurationTab";
-
+import MetricsTab from "@/components/admin/MetricsTab";
+ 
 export default function Admin() {
-  const { user, notify, setPage } = useApp();
-  const [tab, setTab] = useState("inventory");
+  const { user, notify, setPage, token } = useApp();
+ 
+  const [tab, setTab] = useState("metrics");
   const [woodTypes, setWoodTypes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [measures, setMeasures] = useState([]);
   const [supportLoading, setSupportLoading] = useState(true);
-
+ 
   const reloadWoodData = useCallback(async () => {
     setSupportLoading(true);
     try {
@@ -62,80 +64,81 @@ export default function Admin() {
       </div>
     );
   }
-
+ 
   const tabs = [
-    { id: "inventory", label: "Inventario" },
-    { id: "categories", label: "Categorias" },
-    { id: "woodtypes", label: "Tipos de madera" },
-    { id: "quotations", label: "Cotizaciones" },
-    { id: "users", label: "Usuarios" },
-    { id: "configuration", label: "Configuración" },
-  ];
-
+  { id: "metrics",       label: "Métricas",        icon: "📊" },
+  { id: "inventory",     label: "Inventario",       icon: "📦" },
+  { id: "categories",    label: "Categorías",       icon: "🏷️" },
+  { id: "woodtypes",     label: "Tipos de madera",  icon: "🪵" },
+  // separador automático antes de "quotations"
+  { id: "quotations",    label: "Cotizaciones",     icon: "🧾" },
+  { id: "users",         label: "Usuarios",         icon: "👤" },
+  // separador automático antes de "configuration"
+  { id: "configuration", label: "Configuración",    icon: "⚙️" },
+];
+ 
   return (
-    <div className="max-w-7xl mx-auto px-6 md:px-8 py-12">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="font-display font-black text-3xl md:text-4xl text-primary">
-            Panel <span className="text-accent">Administrativo</span>
-          </h1>
-          <p className="text-sm text-text-muted mt-2">
-            Gestión de inventario, clientes, cotizaciones y usuarios con el
-            contrato actual del backend.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-1 bg-surface p-5 border border-border rounded-full p-1">
-          {tabs.map((item) => (
+  <div className="max-w-7xl mx-auto px-6 md:px-8 py-12">
+    {/* Header */}
+    <div className="mb-8">
+      <h1 className="font-display font-black text-3xl md:text-4xl text-primary">
+        Panel <span className="text-accent">Administrativo</span>
+      </h1>
+      <p className="text-sm text-text-muted mt-2">
+        Gestión de inventario, clientes, cotizaciones y usuarios.
+      </p>
+    </div>
+
+    <div className="flex flex-col md:flex-row gap-6 items-start">
+      {/* ── Sidebar de tabs ── */}
+      <nav className="w-full md:w-52 shrink-0 bg-white border border-border rounded-2xl p-2 flex flex-col gap-0.5">
+        <p className="text-[11px] font-medium text-text-subtle uppercase tracking-widest px-2.5 py-2">
+          Panel admin
+        </p>
+
+        {tabs.map((item, i) => (
+          <>
+            {/* Separador antes de "Cotizaciones" y "Configuración" */}
+            {(item.id === "quotations" || item.id === "configuration") && (
+              <div key={`sep-${item.id}`} className="h-px bg-border my-1" />
+            )}
             <button
-              type="button"
               key={item.id}
-              className={
-                "px-4 py-1.5 rounded-full text-sm font-medium transition cursor-pointer " +
-                (tab === item.id
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-text-muted hover:text-primary")
-              }
+              type="button"
               onClick={() => setTab(item.id)}
+              className={
+                "flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition cursor-pointer w-full text-left " +
+                (tab === item.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-text-muted hover:bg-surface hover:text-text")
+              }
             >
+              <span>{item.icon}</span>
               {item.label}
             </button>
-          ))}
-        </div>
-      </div>
+          </>
+        ))}
+      </nav>
 
-      {supportLoading ? (
-        <div className="bg-white border border-border rounded-2xl p-8 text-text-subtle">
-          Cargando catálogos del panel…
-        </div>
-      ) : (
-        <>
-          {tab === "inventory" && (
-            <InventoryTab
-              notify={notify}
-              woodTypes={woodTypes}
-              measures={measures}
-            />
-          )}
-          {tab === "categories" && (
-            <CategoriesTab
-              notify={notify}
-              categories={categories}
-              reloadWoodData={reloadWoodData}
-            />
-          )}
-          {tab === "woodtypes" && (
-            <WoodTypesTab
-              notify={notify}
-              woodTypes={woodTypes}
-              categories={categories}
-              reloadWoodData={reloadWoodData}
-            />
-          )}
-          {tab === "quotations" && <QuotationsTab notify={notify} />}
-          {tab === "users" && <UsersTab notify={notify} />}
-          {tab === "configuration" && <ConfigurationTab notify={notify} />}
-        </>
-      )}
+      {/* ── Contenido ── */}
+      <div className="flex-1 min-w-0">
+        {supportLoading ? (
+          <div className="bg-white border border-border rounded-2xl p-8 text-text-subtle">
+            Cargando catálogos del panel…
+          </div>
+        ) : (
+          <>
+            {tab === "metrics"       && <MetricsTab       notify={notify} token={token} />}
+            {tab === "inventory"     && <InventoryTab      notify={notify} woodTypes={woodTypes} measures={measures} />}
+            {tab === "categories"    && <CategoriesTab     notify={notify} categories={categories} reloadWoodData={reloadWoodData} />}
+            {tab === "woodtypes"     && <WoodTypesTab      notify={notify} woodTypes={woodTypes} categories={categories} reloadWoodData={reloadWoodData} />}
+            {tab === "quotations"    && <QuotationsTab     notify={notify} />}
+            {tab === "users"         && <UsersTab          notify={notify} />}
+            {tab === "configuration" && <ConfigurationTab  notify={notify} />}
+          </>
+        )}
+      </div>
     </div>
-  );
+  </div>
+);
 }
