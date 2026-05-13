@@ -1,55 +1,52 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { clientsAPI } from "@/services/clients";
 import { quotationsAPI } from "@/services/quotations";
+import { usersAPI } from "@/services/users";
 import DataTableShell from "@/components/admin/DataTableShell";
 import Modal from "@/components/admin/Modal";
 import { fmtCurrency, fmtNumber } from "@/components/admin/adminUtils";
 
 export default function QuotationsTab({ notify }) {
   const [quotations, setQuotations] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [estadoFilter, setEstadoFilter] = useState("");
-  const [clientFilter, setClientFilter] = useState("");
+  const [tipoCompraFilter, setTipoCompraFilter] = useState("");
+  const [userFilter, setUserFilter] = useState("");
   const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [selectedLoading, setSelectedLoading] = useState(false);
 
-  const clientMap = useMemo(
-    () => new Map(clients.map((client) => [client.id, client])),
-    [clients],
+  const userMap = useMemo(
+    () => new Map(users.map((entry) => [entry.id, entry])),
+    [users],
   );
+
+  const filteredQuotations = useMemo(() => {
+    return quotations.filter((quotation) => {
+      if (estadoFilter && quotation.estado !== estadoFilter) return false;
+      if (tipoCompraFilter && quotation.tipo_compra !== tipoCompraFilter) {
+        return false;
+      }
+      if (userFilter && String(quotation.user_id) !== userFilter) return false;
+      return true;
+    });
+  }, [estadoFilter, quotations, tipoCompraFilter, userFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [activeClients, inactiveClients, quotationList] = await Promise.all(
-        [
-          clientsAPI.list(true),
-          clientsAPI.list(false),
-          quotationsAPI.list({
-            limit: 100,
-            estado: estadoFilter || undefined,
-            cliente_id: clientFilter || undefined,
-          }),
-        ],
-      );
+      const [quotationList, userList] = await Promise.all([
+        quotationsAPI.list({ limit: 200 }),
+        usersAPI.list(),
+      ]);
 
-      setClients(
-        Array.from(
-          new Map(
-            [...activeClients, ...inactiveClients].map((client) => [
-              client.id,
-              client,
-            ]),
-          ).values(),
-        ),
-      );
-      setQuotations(quotationList);
+      setUsers(Array.isArray(userList) ? userList : []);
+      setQuotations(Array.isArray(quotationList) ? quotationList : []);
     } catch (err) {
       notify(err.message, "error");
     } finally {
       setLoading(false);
     }
-  }, [clientFilter, estadoFilter, notify]);
+  }, [notify]);
 
   useEffect(() => {
     load();
@@ -57,7 +54,7 @@ export default function QuotationsTab({ notify }) {
 
   const updateEstado = async (quotation, estado) => {
     try {
-      await quotationsAPI.setEstado(quotation.id, estado);
+      await quotationsAPI.update(quotation.id, { estado });
       notify(`Cotización #${quotation.id} actualizada a ${estado}`);
       setSelectedQuotation(null);
       load();
@@ -82,103 +79,219 @@ export default function QuotationsTab({ notify }) {
     }
   };
 
+  const openQuotation = async (quotation) => {
+    setSelectedLoading(true);
+    setSelectedQuotation(null);
+    try {
+      const detail = await quotationsAPI.get(quotation.id);
+      setSelectedQuotation(detail);
+    } catch (err) {
+      notify(err.message, "error");
+    } finally {
+      setSelectedLoading(false);
+    }
+  };
+
   return (
     <>
-      {selectedQuotation && (
+      {(selectedQuotation || selectedLoading) && (
         <Modal
-          title={`Cotización #${selectedQuotation.id}`}
+          title={`Cotización #${selectedQuotation?.id || ""}`}
           onClose={() => setSelectedQuotation(null)}
         >
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-xl border border-border bg-surface p-4">
-                <div className="text-xs text-text-subtle uppercase tracking-wide mb-1">
-                  Cliente
-                </div>
-                <div className="font-semibold text-text">
-                  {clientMap.get(selectedQuotation.cliente_id)
-                    ?.nombre_razon_social ||
-                    `Cliente #${selectedQuotation.cliente_id}`}
-                </div>
-                <div className="text-xs text-text-subtle mt-1">
-                  Estado: {selectedQuotation.estado}
-                </div>
-              </div>
-              <div className="rounded-xl border border-border bg-surface p-4">
-                <div className="text-xs text-text-subtle uppercase tracking-wide mb-1">
-                  Totales
-                </div>
-                <div className="font-semibold text-primary">
-                  {fmtCurrency(selectedQuotation.total)}
-                </div>
-                <div className="text-xs text-text-subtle mt-1">
-                  Anticipo: {fmtCurrency(selectedQuotation.monto_anticipo)}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {selectedQuotation.detalles.map((detail) => (
-                <div
-                  key={detail.id}
-                  className="rounded-xl border border-border bg-surface-2 p-4"
-                >
+          {selectedLoading ? (
+            <div className="text-sm text-text-subtle">Cargando...</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-border bg-surface p-4">
+                  <div className="text-xs text-text-subtle uppercase tracking-wide mb-1">
+                    Usuario
+                  </div>
                   <div className="font-semibold text-text">
-                    {detail.tipo_madera?.nombre || "Madera"} ·{" "}
-                    {detail.medida?.etiqueta ||
-                      `${detail.medida?.ancho_in || "—"}" x ${detail.medida?.alto_in || "—"}"`}
+                    {userMap.get(selectedQuotation.user_id)?.full_name ||
+                      userMap.get(selectedQuotation.user_id)?.username ||
+                      `Usuario #${selectedQuotation.user_id}`}
                   </div>
                   <div className="text-xs text-text-subtle mt-1">
-                    {fmtNumber(detail.largo_m)}m · {detail.cantidad} und ·{" "}
-                    {detail.regla_calculo}
-                  </div>
-                  <div className="text-xs text-text-subtle mt-1">
-                    Volumen: {fmtNumber(detail.volumen_m3, 4)} m³
-                  </div>
-                  <div className="text-sm font-semibold text-primary mt-2">
-                    {fmtCurrency(detail.subtotal)}
+                    Estado: {selectedQuotation.estado}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="rounded-xl border border-border bg-surface p-4">
+                  <div className="text-xs text-text-subtle uppercase tracking-wide mb-1">
+                    Total monto
+                  </div>
+                  <div className="font-semibold text-primary">
+                    {fmtCurrency(selectedQuotation.total_monto)}
+                  </div>
+                  <div className="text-xs text-text-subtle mt-1">
+                    Anticipo: {fmtCurrency(selectedQuotation.valor_anticipo)}
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex flex-wrap justify-end gap-2">
-              {selectedQuotation.estado !== "aprobada" && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => updateEstado(selectedQuotation, "aprobada")}
-                >
-                  Aprobar
-                </button>
-              )}
-              {selectedQuotation.estado !== "rechazada" && (
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => updateEstado(selectedQuotation, "rechazada")}
-                >
-                  Rechazar
-                </button>
-              )}
-              {selectedQuotation.estado !== "cancelada" && (
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={() => updateEstado(selectedQuotation, "cancelada")}
-                >
-                  Cancelar
-                </button>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Numero
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {selectedQuotation.numero_cotizacion || "—"}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Tipo compra
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {selectedQuotation.tipo_compra || "—"}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Total m3
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {fmtNumber(selectedQuotation.total_m3, 4)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Subtotal
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {fmtCurrency(selectedQuotation.subtotal)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Transporte
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {fmtCurrency(selectedQuotation.costo_transporte)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Cargue
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {fmtCurrency(selectedQuotation.costo_cargue)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Descargue
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {fmtCurrency(selectedQuotation.costo_descargue)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Salvoconducto
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {fmtCurrency(selectedQuotation.costo_salvoconducto)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Anticipo
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {fmtNumber(selectedQuotation.porcentaje_anticipo, 2)}%
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Emision
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {selectedQuotation.fecha_emision || "—"}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Vencimiento
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {selectedQuotation.fecha_vencimiento || "—"}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-surface-2 p-4">
+                  <div className="text-xs uppercase tracking-[2px] text-text-muted">
+                    Salvoconducto manual
+                  </div>
+                  <div className="font-semibold text-text mt-1">
+                    {selectedQuotation.salvoconducto_es_manual ? "Si" : "No"}
+                  </div>
+                </div>
+              </div>
+
+              {Array.isArray(selectedQuotation.detalles) &&
+              selectedQuotation.detalles.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedQuotation.detalles.map((detail) => (
+                    <div
+                      key={detail.id}
+                      className="rounded-xl border border-border bg-surface-2 p-4"
+                    >
+                      <div className="font-semibold text-text">
+                        {detail.descripcion_item || "Detalle"}
+                      </div>
+                      <div className="text-xs text-text-subtle mt-1">
+                        Pieza #{detail.pieza_id} · {detail.cantidad} und
+                      </div>
+                      <div className="text-xs text-text-subtle mt-1">
+                        Volumen: {fmtNumber(detail.volumen_unitario_m3, 4)} m3
+                      </div>
+                      <div className="text-sm font-semibold text-primary mt-2">
+                        {fmtCurrency(detail.subtotal)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap justify-end gap-2">
+                {selectedQuotation.estado !== "aprobada" && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => updateEstado(selectedQuotation, "aprobada")}
+                  >
+                    Aprobar
+                  </button>
+                )}
+                {selectedQuotation.estado !== "rechazada" && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => updateEstado(selectedQuotation, "rechazada")}
+                  >
+                    Rechazar
+                  </button>
+                )}
+                {selectedQuotation.estado !== "cancelada" && (
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => updateEstado(selectedQuotation, "cancelada")}
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </Modal>
       )}
 
       <DataTableShell
         title="Cotizaciones"
-        count={quotations.length}
-        subtitle="Listado y cambio de estado de cotizaciones del nuevo backend."
+        count={filteredQuotations.length}
+        subtitle="Listado, filtros y gestion de cotizaciones del backend."
         action={
           <div className="flex flex-wrap gap-2">
             <select
@@ -194,13 +307,22 @@ export default function QuotationsTab({ notify }) {
             </select>
             <select
               className="form-input py-2 min-w-[190px]"
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
+              value={tipoCompraFilter}
+              onChange={(e) => setTipoCompraFilter(e.target.value)}
             >
-              <option value="">Todos los clientes</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.nombre_razon_social}
+              <option value="">Todos los tipos</option>
+              <option value="por_pedido">por_pedido</option>
+              <option value="por_pulgadas">por_pulgadas</option>
+            </select>
+            <select
+              className="form-input py-2 min-w-[190px]"
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+            >
+              <option value="">Todos los usuarios</option>
+              {users.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.full_name || entry.username || `Usuario #${entry.id}`}
                 </option>
               ))}
             </select>
@@ -214,16 +336,17 @@ export default function QuotationsTab({ notify }) {
             <thead className="bg-surface-2 text-text-muted text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-4 py-2 text-left font-semibold">ID</th>
-                <th className="px-4 py-2 text-left font-semibold">Cliente</th>
-                <th className="px-4 py-2 text-left font-semibold">Fecha</th>
-                <th className="px-4 py-2 text-left font-semibold">Detalles</th>
+                <th className="px-4 py-2 text-left font-semibold">Numero</th>
+                <th className="px-4 py-2 text-left font-semibold">Usuario</th>
+                <th className="px-4 py-2 text-left font-semibold">Tipo</th>
+                <th className="px-4 py-2 text-left font-semibold">Emision</th>
                 <th className="px-4 py-2 text-left font-semibold">Total</th>
                 <th className="px-4 py-2 text-left font-semibold">Estado</th>
                 <th className="px-4 py-2 text-right font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {quotations.map((quotation) => (
+              {filteredQuotations.map((quotation) => (
                 <tr
                   key={quotation.id}
                   className="hover:bg-surface-2/50 align-top"
@@ -232,17 +355,23 @@ export default function QuotationsTab({ notify }) {
                     #{quotation.id}
                   </td>
                   <td className="px-4 py-3">
-                    {clientMap.get(quotation.cliente_id)?.nombre_razon_social ||
-                      `Cliente #${quotation.cliente_id}`}
+                    {quotation.numero_cotizacion || "—"}
                   </td>
                   <td className="px-4 py-3">
-                    {new Date(quotation.fecha_creacion).toLocaleDateString(
-                      "es-CO",
-                    )}
+                    {userMap.get(quotation.user_id)?.full_name ||
+                      userMap.get(quotation.user_id)?.username ||
+                      `Usuario #${quotation.user_id}`}
                   </td>
-                  <td className="px-4 py-3">{quotation.detalles.length}</td>
+                  <td className="px-4 py-3">{quotation.tipo_compra || "—"}</td>
+                  <td className="px-4 py-3">
+                    {quotation.fecha_emision
+                      ? new Date(quotation.fecha_emision).toLocaleDateString(
+                          "es-CO",
+                        )
+                      : "—"}
+                  </td>
                   <td className="px-4 py-3 font-semibold">
-                    {fmtCurrency(quotation.total)}
+                    {fmtCurrency(quotation.total_monto)}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -263,7 +392,7 @@ export default function QuotationsTab({ notify }) {
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm"
-                        onClick={() => setSelectedQuotation(quotation)}
+                        onClick={() => openQuotation(quotation)}
                       >
                         Ver
                       </button>
@@ -271,9 +400,8 @@ export default function QuotationsTab({ notify }) {
                         type="button"
                         className="btn btn-ghost btn-sm text-danger"
                         onClick={() => remove(quotation)}
-                        disabled={quotation.estado === "cancelada"}
                       >
-                        Cancelar
+                        Eliminar
                       </button>
                     </div>
                   </td>
