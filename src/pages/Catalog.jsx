@@ -90,7 +90,7 @@ const formatStrategy = (strategy) =>
   strategy ? strategy.replace(/_/g, " ") : "";
 
 function CatalogInner() {
-  const { addToCart, cart, setPage, notify } = useApp();
+  const { addToCart, cart, setPage, notify, user } = useApp();
   const [pieces, setPieces] = useState([]);
   const [woodTypes, setWoodTypes] = useState([]);
   const [measures, setMeasures] = useState([]);
@@ -436,8 +436,22 @@ function CatalogInner() {
                       <button
                         type="button"
                         className="btn btn-primary btn-sm flex-1"
-                        disabled={isUnavailable}
-                        onClick={() => addToCart(item)}
+                        disabled={
+                          !user ||
+                          item.quantity === 0 ||
+                          item.status !== "disponible"
+                        }
+                        onClick={() => {
+                          if (!user) {
+                            notify(
+                              "Inicia sesion para agregar productos",
+                              "error",
+                            );
+                            setPage("login");
+                            return;
+                          }
+                          addToCart(item);
+                        }}
                       >
                         <ShoppingCart size={14} />
                         {isUnavailable ? "No disponible" : "Agregar"}

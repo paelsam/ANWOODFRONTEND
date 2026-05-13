@@ -251,7 +251,7 @@ export default function MetricsTab({ notify }) {
           icon="🔑"
           label="Usuarios activos"
           value={fmtNum(data.usuariosActivos)}
-          sub="Administradores y operadores"
+          sub={`${fmtNum(data.clientesTotal)} clientes registrados`}
           color={COLORS.muted}
         />
       </div>

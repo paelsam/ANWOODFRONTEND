@@ -65,11 +65,13 @@ export function useAuth({ notify } = {}) {
       const payload = parseJwtPayload(data.access_token);
       const sub = payload?.sub || username;
       const role = payload?.role || "user";
+      const user_id = payload?.user_id || "";
       const snapshot = getStoredUser() || {};
       const next = {
         ...snapshot,
         username: sub,
         role: role,
+        user_id: user_id,
       };
       console.log("next", next);
       setStoredUser(next);

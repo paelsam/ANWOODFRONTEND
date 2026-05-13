@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { inventoryAPI } from "@/services/inventory";
 import CategoriesTab from "@/components/admin/CategoriesTab";
-import ClientsTab from "@/components/admin/ClientsTab";
 import InventoryTab from "@/components/admin/InventoryTab";
 import QuotationsTab from "@/components/admin/QuotationsTab";
 import UsersTab from "@/components/admin/UsersTab";
@@ -11,8 +10,6 @@ import ConfigurationTab from "@/components/admin/ConfigurationTab";
 import MetricsTab from "@/components/admin/MetricsTab";
  
 export default function Admin() {
-  // ── Ajusta "token" al nombre real que expone tu AppContext.
-  // Ejemplos comunes: user.token · accessToken · authToken · token
   const { user, notify, setPage, token } = useApp();
  
   const [tab, setTab] = useState("metrics");
@@ -38,12 +35,16 @@ export default function Admin() {
       setSupportLoading(false);
     }
   }, [notify]);
- 
+
+  const canAccess = user?.role === "admin" || user?.role === "staff";
+
   useEffect(() => {
-    if (user?.role === "admin") reloadWoodData();
-  }, [reloadWoodData, user]);
- 
-  if (!user || user.role !== "admin") {
+    if (canAccess) {
+      reloadWoodData();
+    }
+  }, [canAccess, reloadWoodData]);
+
+  if (!user || !canAccess) {
     return (
       <div className="text-center py-20 px-6">
         <div className="text-6xl mb-4">🔒</div>
@@ -51,7 +52,7 @@ export default function Admin() {
           Acceso restringido
         </h2>
         <p className="text-text-muted mb-6">
-          Debes iniciar sesión como administrador.
+          Debes iniciar sesión como administrador o staff.
         </p>
         <button
           type="button"
@@ -71,7 +72,6 @@ export default function Admin() {
   { id: "woodtypes",     label: "Tipos de madera",  icon: "🪵" },
   // separador automático antes de "quotations"
   { id: "quotations",    label: "Cotizaciones",     icon: "🧾" },
-  { id: "clients",       label: "Clientes",         icon: "👥" },
   { id: "users",         label: "Usuarios",         icon: "👤" },
   // separador automático antes de "configuration"
   { id: "configuration", label: "Configuración",    icon: "⚙️" },
@@ -133,7 +133,6 @@ export default function Admin() {
             {tab === "categories"    && <CategoriesTab     notify={notify} categories={categories} reloadWoodData={reloadWoodData} />}
             {tab === "woodtypes"     && <WoodTypesTab      notify={notify} woodTypes={woodTypes} categories={categories} reloadWoodData={reloadWoodData} />}
             {tab === "quotations"    && <QuotationsTab     notify={notify} />}
-            {tab === "clients"       && <ClientsTab        notify={notify} />}
             {tab === "users"         && <UsersTab          notify={notify} />}
             {tab === "configuration" && <ConfigurationTab  notify={notify} />}
           </>
