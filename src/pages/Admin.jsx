@@ -34,13 +34,15 @@ export default function Admin() {
     }
   }, [notify]);
 
+  const canAccess = user?.role === "admin" || user?.role === "staff";
+
   useEffect(() => {
-    if (user?.role === "admin") {
+    if (canAccess) {
       reloadWoodData();
     }
-  }, [reloadWoodData, user]);
+  }, [canAccess, reloadWoodData]);
 
-  if (!user || user.role !== "admin") {
+  if (!user || !canAccess) {
     return (
       <div className="text-center py-20 px-6">
         <div className="text-6xl mb-4">🔒</div>
@@ -48,7 +50,7 @@ export default function Admin() {
           Acceso restringido
         </h2>
         <p className="text-text-muted mb-6">
-          Debes iniciar sesión como administrador.
+          Debes iniciar sesión como administrador o staff.
         </p>
         <button
           type="button"
