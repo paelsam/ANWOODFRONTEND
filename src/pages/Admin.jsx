@@ -8,6 +8,7 @@ import UsersTab from "@/components/admin/UsersTab";
 import WoodTypesTab from "@/components/admin/WoodTypesTab";
 import ConfigurationTab from "@/components/admin/ConfigurationTab";
 import MetricsTab from "@/components/admin/MetricsTab";
+import AdminChatbot from "@/components/admin/AdminChatbot";
  
 export default function Admin() {
   const { user, notify, setPage, token } = useApp();
@@ -75,6 +76,7 @@ export default function Admin() {
   { id: "users",         label: "Usuarios",         icon: "👤" },
   // separador automático antes de "configuration"
   { id: "configuration", label: "Configuración",    icon: "⚙️" },
+  { id: "chatbot",       label: "Asistente IA",     icon: "💬" },
 ];
  
   return (
@@ -135,6 +137,7 @@ export default function Admin() {
             {tab === "quotations"    && <QuotationsTab     notify={notify} />}
             {tab === "users"         && <UsersTab          notify={notify} />}
             {tab === "configuration" && <ConfigurationTab  notify={notify} />}
+            {tab === "chatbot"       && <AdminChatbot      notify={notify} />}
           </>
         )}
       </div>

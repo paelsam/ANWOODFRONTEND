@@ -10,6 +10,9 @@ vi.mock("@/services/inventory", () => ({
   },
 }));
 
+vi.mock("@/components/admin/MetricsTab", () => ({
+  default: () => <div>Metrics Tab</div>,
+}));
 vi.mock("@/components/admin/CategoriesTab", () => ({
   default: () => <div>Categories Tab</div>,
 }));
@@ -30,6 +33,9 @@ vi.mock("@/components/admin/WoodTypesTab", () => ({
 }));
 vi.mock("@/components/admin/ConfigurationTab", () => ({
   default: () => <div>Configuration Tab</div>,
+}));
+vi.mock("@/components/admin/AdminChatbot", () => ({
+  default: () => <div>Chatbot Tab</div>,
 }));
 
 import { inventoryAPI } from "@/services/inventory";
@@ -59,12 +65,18 @@ describe("Admin page", () => {
     const user = userEvent.setup();
     renderWithApp(<Admin />, { user: adminUserFixture });
 
-    expect(await screen.findByText("Inventory Tab")).toBeInTheDocument();
+    expect(await screen.findByText("Metrics Tab")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Usuarios" }));
+    await user.click(screen.getByRole("button", { name: /Inventario/i }));
+    expect(screen.getByText("Inventory Tab")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Usuarios/i }));
     expect(screen.getByText("Users Tab")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Configuración" }));
+    await user.click(screen.getByRole("button", { name: /Configuración/i }));
     expect(screen.getByText("Configuration Tab")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Asistente IA/i }));
+    expect(screen.getByText("Chatbot Tab")).toBeInTheDocument();
   });
 });

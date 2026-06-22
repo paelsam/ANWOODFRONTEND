@@ -17,6 +17,7 @@ export function buildAppContext(overrides = {}) {
     removeFromCart: vi.fn(),
     updateCartQty: vi.fn(),
     clearCart: vi.fn(),
+    refreshCart: vi.fn(),
     getCartItemCount: vi.fn(() => 0),
     getCartTotal: vi.fn(() => 0),
     refreshServerCart: vi.fn(),

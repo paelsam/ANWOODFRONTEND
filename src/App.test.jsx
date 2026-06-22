@@ -38,6 +38,10 @@ vi.mock("@/components/layout/Notification", () => ({
   default: ({ notification }) => <div>{notification?.msg || "Sin notificación"}</div>,
 }));
 
+vi.mock("@/components/chat/AssistantChat", () => ({
+  default: () => <div>Assistant Chat Mock</div>,
+}));
+
 vi.mock("@/components/layout/Header", async () => {
   const actual = await vi.importActual("@/contexts/AppContext");
 
@@ -78,6 +82,7 @@ describe("App", () => {
       removeFromCart: vi.fn(),
       updateCartQty: vi.fn(),
       clearCart: vi.fn(),
+      refreshCart: vi.fn(),
       getCartItemCount: vi.fn(() => 0),
       getCartTotal: vi.fn(() => 0),
     });
@@ -103,6 +108,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Header Mock" })).toBeInTheDocument();
     expect(screen.getByText("Todo bien")).toBeInTheDocument();
     expect(screen.getByText("Catalog Page")).toBeInTheDocument();
+    expect(screen.getByText("Assistant Chat Mock")).toBeInTheDocument();
     expect(screen.getByText("Footer Mock")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Header Mock" }));

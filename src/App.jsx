@@ -6,6 +6,7 @@ import Quotation from "@/pages/Quotation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Notification from "@/components/layout/Notification";
+import AssistantChat from "@/components/chat/AssistantChat";
 import { AppContext } from "@/contexts/AppContext";
 import { useNotification } from "@/hooks/useNotification";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,6 +61,7 @@ export default function App() {
       <div className="flex flex-col min-h-screen bg-bg">
         <Header />
         <Notification notification={notification} />
+        <AssistantChat visible={page === "catalog" || page === "cart"} />
         <main className="flex-1 w-full">
           {page === "login" && <Login />}
           {page === "admin" && <Admin />}
