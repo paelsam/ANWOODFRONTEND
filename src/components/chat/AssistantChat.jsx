@@ -8,6 +8,7 @@ import {
   Volume2,
   VolumeX,
   Loader2,
+  CircleStop,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { useAssistantChat } from "@/hooks/useAssistantChat";
@@ -23,13 +24,29 @@ const SpeechRecognition =
     ? window.SpeechRecognition || window.webkitSpeechRecognition
     : null;
 
-function speakText(text, lang = "es-CO") {
+function speakText(text, lang = "es-CO", onStart, onEnd) {
   if (!window.speechSynthesis || !text) return;
+
   window.speechSynthesis.cancel();
+
   const plain = stripMarkdownForSpeech(text);
   const utterance = new SpeechSynthesisUtterance(plain);
+
   utterance.lang = lang;
   utterance.rate = 0.95;
+
+  utterance.onstart = () => {
+    onStart?.();
+  };
+
+  utterance.onend = () => {
+    onEnd?.();
+  };
+
+  utterance.onerror = () => {
+    onEnd?.();
+  };
+
   window.speechSynthesis.speak(utterance);
 }
 
@@ -39,12 +56,43 @@ export default function AssistantChat({ visible = true }) {
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
   const [speakReplies, setSpeakReplies] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const listRef = useRef(null);
   const recognitionRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const listeningRef = useRef(false);
+  const ttsSpeakingRef = useRef(false);
+  const micWasActiveBeforeTTSRef = useRef(false);
 
   const handleReply = useCallback(
     (reply) => {
-      if (speakReplies) speakText(reply);
+
+      if (!speakReplies) return;
+
+      speakText(
+        reply,
+        "es-CO",
+        () => {
+          ttsSpeakingRef.current = true;
+          setIsSpeaking(true);
+
+          micWasActiveBeforeTTSRef.current = listeningRef.current;
+
+          if (listeningRef.current) {
+            recognitionRef.current?.stop();
+            setListening(false);
+            listeningRef.current = false;
+          }
+        },
+        () => {
+          ttsSpeakingRef.current = false;
+          setIsSpeaking(false);
+
+          if (micWasActiveBeforeTTSRef.current) {
+            startListening();
+          }
+        }
+      );
     },
     [speakReplies],
   );
@@ -64,10 +112,19 @@ export default function AssistantChat({ visible = true }) {
   }, [open]);
 
   useEffect(() => {
+
     return () => {
+
+      listeningRef.current = false;
+
+      clearTimeout(silenceTimerRef.current);
+
       recognitionRef.current?.stop?.();
+
       window.speechSynthesis?.cancel();
+
     };
+
   }, []);
 
   const handleSubmit = async (e) => {
@@ -80,37 +137,112 @@ export default function AssistantChat({ visible = true }) {
   };
 
   const startListening = useCallback(() => {
+
     if (!SpeechRecognition) {
       notify("Tu navegador no soporta reconocimiento de voz", "info");
       return;
     }
-    if (listening) {
+
+    // Toggle: detener
+    if (listeningRef.current) {
+
+      listeningRef.current = false;
+
+      clearTimeout(silenceTimerRef.current);
+
       recognitionRef.current?.stop();
+
+      setListening(false);
+
       return;
     }
 
     const recognition = new SpeechRecognition();
+
     recognition.lang = "es-CO";
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
-    recognition.onstart = () => setListening(true);
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => {
-      setListening(false);
-      notify("No se pudo capturar el audio", "error");
+    recognition.onstart = () => {
+
+      listeningRef.current = true;
+
+      setListening(true);
+
     };
-    recognition.onresult = (event) => {
-      const transcript = event.results[0]?.[0]?.transcript?.trim();
-      if (transcript) {
-        window.speechSynthesis?.cancel();
-        sendMessage(transcript);
+
+    recognition.onend = () => {
+
+      if (listeningRef.current) {
+
+        recognition.start();
+
+      } else {
+
+        setListening(false);
+
       }
+
+    };
+
+    recognition.onerror = () => {
+
+      listeningRef.current = false;
+
+      setListening(false);
+
+      notify("No se pudo capturar el audio", "error");
+
+    };
+
+    recognition.onresult = (event) => {
+
+      if (ttsSpeakingRef.current) return;
+
+      let transcript = "";
+
+      for (
+        let i = event.resultIndex;
+        i < event.results.length;
+        i++
+      ) {
+
+        transcript += event.results[i][0].transcript;
+
+      }
+
+      transcript = transcript.trim();
+
+      setInput(transcript);
+
+      clearTimeout(silenceTimerRef.current);
+
+      silenceTimerRef.current = setTimeout(async () => {
+
+        if (!transcript || loading) return;
+
+        window.speechSynthesis?.cancel();
+
+        setInput("");
+
+        await sendMessage(transcript);
+
+      }, 1500);
+
     };
 
     recognitionRef.current = recognition;
+
     recognition.start();
-  }, [listening, notify, sendMessage]);
+
+  }, [notify, sendMessage, loading]);
+
+  const stopSpeaking = () => {
+  window.speechSynthesis?.cancel();
+  ttsSpeakingRef.current = false;
+  setIsSpeaking(false);
+};
 
   const handleLogin = useCallback(() => {
     setPage("login");
@@ -142,19 +274,70 @@ export default function AssistantChat({ visible = true }) {
             Catálogo · Inventario · Carrito
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
+            role="switch"
+            aria-checked={speakReplies}
             onClick={() => {
-              setSpeakReplies((v) => !v);
-              if (speakReplies) window.speechSynthesis?.cancel();
+
+              setSpeakReplies((v) => {
+                const next = !v;
+
+                if (!next) {
+                  window.speechSynthesis?.cancel();
+                  ttsSpeakingRef.current = false;
+                  setIsSpeaking(false);
+                }
+
+                return next;
+              });
+
+              window.speechSynthesis?.cancel();
+
+              if (listeningRef.current && !speakReplies) {
+                micWasActiveBeforeTTSRef.current = true;
+              }
+
+              if (micWasActiveBeforeTTSRef.current && !speakReplies) {
+                setTimeout(() => {
+                  startListening();
+                }, 200);
+              }
             }}
-            className="btn btn-ghost btn-sm btn-icon"
             title={speakReplies ? "Silenciar respuestas" : "Leer respuestas"}
             aria-label={speakReplies ? "Silenciar respuestas" : "Leer respuestas"}
+            className={
+              "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 " +
+              (speakReplies ? "bg-primary" : "bg-border")
+            }
           >
-            {speakReplies ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            <span
+              className={
+                "absolute left-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200 " +
+                (speakReplies ? "translate-x-5" : "translate-x-0")
+              }
+            >
+              {speakReplies ? (
+                <Volume2 size={11} className="text-primary" />
+              ) : (
+                <VolumeX size={11} className="text-text-subtle" />
+              )}
+            </span>
           </button>
+
+          {speakReplies && isSpeaking && (
+            <button
+              type="button"
+              onClick={stopSpeaking}
+              className="btn btn-ghost btn-sm btn-icon"
+              title="Detener lectura"
+              aria-label="Detener lectura"
+            >
+              <CircleStop size={16} />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setOpen(false)}
